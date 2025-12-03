@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: frontend-builder
+    container_name: personal-excalidraw-frontend
+    ports:
+      - '5173:5173'
+    volumes:
+      - ./frontend:/app/frontend
+      - /app/frontend/node_modules
+    working_dir: /app/frontend
+    command: npm run dev
+    environment:
+      - NODE_ENV=development
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: personal-excalidraw-backend
+    ports:
+      - '8080:8080'
+    volumes:
+      - ./backend:/app
+    working_dir: /app
+    command: go run main.go
+    environment:
+      - GO_ENV=development
+
+  # Uncomment when adding database support
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: personal-excalidraw-db
+  #   environment:
+  #     POSTGRES_DB: excalidraw
+  #     POSTGRES_USER: excalidraw
+  #     POSTGRES_PASSWORD: excalidraw
+  #   ports:
+  #     - '5432:5432'
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+
+# volumes:
+#   postgres_data:
