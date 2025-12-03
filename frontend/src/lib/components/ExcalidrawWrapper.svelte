@@ -2,6 +2,8 @@
 	import { onMount } from 'svelte'
 	import { drawingStore } from '$lib/stores/drawing'
 	import { uiStore } from '$lib/stores/ui'
+	import { excalidrawStore } from '$lib/stores/excalidraw'
+	import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types/types'
 
 	let container: HTMLDivElement
 	let excalidrawApp: any
@@ -24,10 +26,20 @@
 					appState,
 					files,
 				})
+
+				// Sync active tool with UI store
+				if (appState?.activeTool?.type) {
+					uiStore.setActiveTool(appState.activeTool.type)
+				}
+			}
+
+			const handleExcalidrawAPI = (api: ExcalidrawImperativeAPI) => {
+				excalidrawStore.setAPI(api)
 			}
 
 			const ExcalidrawComponent = React.createElement(Excalidraw, {
 				onChange: handleChange,
+				excalidrawAPI: handleExcalidrawAPI,
 				initialData: {
 					elements: [],
 					appState: {},
@@ -48,5 +60,10 @@
 <style>
 	:global(.excalidraw) {
 		font-family: 'Cascadia Code', monospace;
+	}
+
+	/* Hide the library button */
+	:global(.excalidraw .sidebar-trigger) {
+		display: none !important;
 	}
 </style>

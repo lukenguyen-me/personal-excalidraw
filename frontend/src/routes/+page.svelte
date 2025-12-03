@@ -1,2 +1,9 @@
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation</p>
+<script lang="ts">
+	import ExcalidrawWrapper from '$lib/components/ExcalidrawWrapper.svelte'
+</script>
+
+<div class="h-screen w-screen flex flex-col bg-base-100" data-theme="light">
+	<div class="flex-1 flex overflow-hidden">
+		<ExcalidrawWrapper />
+	</div>
+</div>

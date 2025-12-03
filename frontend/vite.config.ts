@@ -6,6 +6,16 @@ import { sveltekit } from '@sveltejs/kit/vite';
 
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit(), devtoolsJson()],
+	define: {
+		'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+	},
+	optimizeDeps: {
+		esbuildOptions: {
+			define: {
+				global: 'globalThis',
+			},
+		},
+	},
 	test: {
 		expect: { requireAssertions: true },
 		projects: [
