@@ -1,7 +1,7 @@
 <script lang="ts">
+	import { goto } from '$app/navigation'
 	import { drawingsStore } from '$lib/stores/mockDrawings'
-
-	const drawings = drawingsStore.getDrawings()
+	import type { ID } from '$lib/types'
 
 	function formatDate(date: Date): string {
 		return new Date(date).toLocaleDateString('en-US', {
@@ -13,7 +13,23 @@
 		})
 	}
 
-	function handleDelete(id: number) {
+	function handleNewDrawing() {
+		// Generate new ID
+		const newId = Date.now() as ID
+
+		// Create drawing entry
+		drawingsStore.addDrawing({
+			id: newId,
+			name: 'Untitled Drawing',
+			createdAt: new Date(),
+			updatedAt: new Date()
+		})
+
+		// Navigate to new drawing
+		goto(`/drawing/${newId}`)
+	}
+
+	function handleDelete(id: ID) {
 		drawingsStore.deleteDrawing(id)
 	}
 </script>
@@ -22,7 +38,7 @@
 	<div class="max-w-6xl mx-auto">
 		<div class="flex justify-between items-center mb-8">
 			<h1 class="text-3xl font-bold">My Drawings</h1>
-			<a href="/drawing/new" class="btn btn-primary">
+			<button onclick={handleNewDrawing} class="btn btn-primary">
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
 					class="h-5 w-5"
@@ -38,7 +54,7 @@
 					/>
 				</svg>
 				New
-			</a>
+			</button>
 		</div>
 
 		<div class="overflow-x-auto">
@@ -52,7 +68,7 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#each drawings as drawing}
+					{#each $drawingsStore as drawing}
 						<tr>
 							<td class="font-medium">{drawing.name}</td>
 							<td>{formatDate(drawing.createdAt)}</td>

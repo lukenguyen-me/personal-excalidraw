@@ -1,7 +1,8 @@
 import { writable } from 'svelte/store'
+import type { ID } from '$lib/types'
 
 export interface Drawing {
-	id: number
+	id: ID
 	name: string
 	createdAt: Date
 	updatedAt: Date
@@ -64,14 +65,43 @@ function createDrawingsStore() {
 
 	return {
 		subscribe,
-		getDrawings: () => mockDrawingsData,
-		getDrawing: (id: number) => mockDrawingsData.find((d) => d.id === id),
-		deleteDrawing: (id: number) => {
-			// Empty for now - will be implemented later
-			console.log(`Delete drawing ${id} - not implemented yet`)
+		getDrawings: () => {
+			let drawings: Drawing[] = []
+			const unsubscribe = subscribe((value) => {
+				drawings = value
+			})
+			unsubscribe()
+			return drawings
+		},
+		getDrawing: (id: ID) => {
+			let drawings: Drawing[] = []
+			const unsubscribe = subscribe((value) => {
+				drawings = value
+			})
+			unsubscribe()
+			return drawings.find((d) => d.id === id)
+		},
+		addDrawing: (drawing: Drawing) => {
+			update((drawings) => [...drawings, drawing])
+		},
+		updateTimestamp: (id: ID) => {
+			update((drawings) =>
+				drawings.map((d) => (d.id === id ? { ...d, updatedAt: new Date() } : d))
+			)
+		},
+		deleteDrawing: (id: ID) => {
+			update((drawings) => drawings.filter((d) => d.id !== id))
+			// Also delete the drawing content from localStorage
+			const { deleteDrawingById } = require('./drawing')
+			deleteDrawingById(id)
 		},
 		reset: () => set(mockDrawingsData)
 	}
 }
 
 export const drawingsStore = createDrawingsStore()
+
+// Expose updateTimestamp globally for use in drawing.ts to avoid circular dependency
+if (typeof window !== 'undefined') {
+	;(window as any).__updateDrawingTimestamp = drawingsStore.updateTimestamp
+}
