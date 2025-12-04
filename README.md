@@ -107,15 +107,18 @@ docker run -p 8080:8080 personal-excalidraw:latest
 - Full Excalidraw canvas integration
 - Header with:
   - Back button to return to drawings list
-  - Status indicator (placeholder for save/load states)
+  - Status indicator showing loading/ready states
 - Dynamic routing with drawing ID parameter
-- Empty canvas (data persistence coming in future phases)
+- **Auto-save**: Drawings automatically save 1 second after stopping edits
+- **Data persistence**: All changes saved to localStorage
+- **Drawing loading**: Previous work loads when returning to a drawing
 
 ### State Management
-- **Drawing Store**: Manages drawing elements, app state, and files
+- **Drawing Store**: Manages drawing elements, app state, and files with ID-aware persistence
 - **Excalidraw Store**: Handles Excalidraw API reference
 - **UI Store**: Tracks UI state (sidebar, zoom, tools, etc.)
-- **Mock Drawings Store**: 8 sample drawings with incremental IDs
+- **Mock Drawings Store**: Manages drawing metadata with reactive updates
+- **Type System**: Centralized `ID` type for consistent identifier handling
 
 ## Development Roadmap
 
@@ -131,14 +134,18 @@ docker run -p 8080:8080 personal-excalidraw:latest
 - [x] Wireframe theme configuration
 - [x] Mock data with 8 sample drawings
 
-### Phase 2: Local Storage & Real Data
+### Phase 2: Local Storage & Real Data 🚧
 
-- [ ] Connect drawing editor to load/save specific drawings
-- [ ] Implement actual delete functionality
+- [x] Connect drawing editor to load/save specific drawings
+- [x] LocalStorage persistence with per-drawing storage (excalidraw-drawing-{id})
+- [x] Auto-save with 1-second debounce for performance
+- [x] Implement actual delete functionality (removes both metadata and content)
+- [x] ID type abstraction for consistent type safety
+- [x] Drawing metadata timestamp synchronization
+- [x] Data validation and error handling (corrupted data, quota exceeded)
 - [ ] Add drawing name editing
-- [ ] LocalStorage persistence for drawings
-- [ ] Export/Import functionality
-- [ ] Drawing history management
+- [ ] Export/Import functionality (JSON, PNG, SVG)
+- [ ] Drawing history management (undo/redo persistence)
 
 ### Phase 3: Backend Integration
 
@@ -158,7 +165,34 @@ docker run -p 8080:8080 personal-excalidraw:latest
 - [ ] Tags and categories
 - [ ] Sharing capabilities
 
-## API Endpoints (Future)
+## Data Storage
+
+### LocalStorage Schema (Phase 2)
+
+Currently, drawings are stored in localStorage with the following schema:
+
+```
+Key: excalidraw-drawing-{id}
+Value: {
+  elements: [...],      // Excalidraw drawing elements (shapes, lines, text, etc.)
+  appState: {...},      // Canvas state (zoom, scroll position, view mode, etc.)
+  files: {...}          // Embedded images and files
+}
+```
+
+**Features:**
+- Per-drawing storage with unique keys
+- Automatic JSON serialization/deserialization
+- Data validation on load (validates structure and element arrays)
+- Error handling for corrupted data and quota exceeded
+- Automatic cleanup of invalid entries
+
+**Limitations:**
+- localStorage has ~5-10MB limit per domain
+- Data is browser-specific (not synced across devices)
+- Will be replaced with backend API in Phase 3
+
+## API Endpoints (Future - Phase 3)
 
 ```
 GET    /api/drawings          # List all drawings
