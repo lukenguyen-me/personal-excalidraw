@@ -13,6 +13,7 @@ import (
 	httpAdapter "github.com/personal-excalidraw/backend/internal/adapter/http"
 	"github.com/personal-excalidraw/backend/internal/adapter/http/handler"
 	"github.com/personal-excalidraw/backend/internal/infrastructure/config"
+	"github.com/personal-excalidraw/backend/internal/infrastructure/database"
 	"github.com/personal-excalidraw/backend/internal/infrastructure/logger"
 )
 
@@ -27,13 +28,21 @@ func main() {
 	appLogger := logger.New(&cfg.Logger)
 	appLogger.Info("Starting Personal Excalidraw backend server")
 
-	// 3. Initialize HTTP handlers
+	// 3. Initialize database connection
+	db, err := database.NewPostgresDB(&cfg.Database, appLogger)
+	if err != nil {
+		appLogger.Error("Failed to connect to database", "error", err)
+		log.Fatalf("Database connection failed: %v", err)
+	}
+	defer db.Close()
+
+	// 4. Initialize HTTP handlers
 	healthHandler := handler.NewHealthHandler()
 
-	// 4. Setup router
+	// 5. Setup router
 	router := httpAdapter.NewRouter(cfg, healthHandler, appLogger)
 
-	// 5. Create HTTP server
+	// 6. Create HTTP server
 	serverAddr := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
 	server := &http.Server{
 		Addr:         serverAddr,
@@ -42,7 +51,7 @@ func main() {
 		WriteTimeout: time.Duration(cfg.Server.WriteTimeout) * time.Second,
 	}
 
-	// 6. Start server in goroutine
+	// 7. Start server in goroutine
 	go func() {
 		appLogger.Info("Server starting",
 			"address", serverAddr,
@@ -56,7 +65,7 @@ func main() {
 		}
 	}()
 
-	// 7. Graceful shutdown
+	// 8. Graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit

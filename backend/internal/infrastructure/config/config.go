@@ -10,9 +10,10 @@ import (
 
 // Config holds all configuration for the application
 type Config struct {
-	Server ServerConfig
-	CORS   CORSConfig
-	Logger LoggerConfig
+	Server   ServerConfig
+	CORS     CORSConfig
+	Logger   LoggerConfig
+	Database DatabaseConfig
 }
 
 // ServerConfig holds server-related configuration
@@ -36,6 +37,18 @@ type LoggerConfig struct {
 	Format string // "json" or "text"
 }
 
+// DatabaseConfig holds database-related configuration
+type DatabaseConfig struct {
+	Host     string
+	Port     string
+	User     string
+	Password string
+	DBName   string
+	SSLMode  string
+	MaxConns int
+	MinConns int
+}
+
 // Load loads configuration from environment variables
 func Load() (*Config, error) {
 	// Load .env file if exists (ignore error if not found)
@@ -56,6 +69,16 @@ func Load() (*Config, error) {
 		Logger: LoggerConfig{
 			Level:  getEnv("LOG_LEVEL", "info"),
 			Format: getEnv("LOG_FORMAT", "text"),
+		},
+		Database: DatabaseConfig{
+			Host:     getEnv("DB_HOST", "localhost"),
+			Port:     getEnv("DB_PORT", "5432"),
+			User:     getEnv("DB_USER", "postgres"),
+			Password: getEnv("DB_PASSWORD", "postgres"),
+			DBName:   getEnv("DB_NAME", "personal_excalidraw"),
+			SSLMode:  getEnv("DB_SSLMODE", "disable"),
+			MaxConns: getEnvInt("DB_MAX_CONNS", 25),
+			MinConns: getEnvInt("DB_MIN_CONNS", 5),
 		},
 	}
 
