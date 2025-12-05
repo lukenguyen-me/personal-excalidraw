@@ -6,11 +6,17 @@
 	import { loadDrawingById } from '$lib/stores/drawing'
 	import { drawingsStore } from '$lib/stores/mockDrawings'
 	import type { DrawingState } from '$lib/stores/drawing'
+	import type { Drawing } from '$lib/stores/mockDrawings'
 	import type { ID } from '$lib/types'
 
 	const drawingId = Number(page.params.id) as ID
-	let initialData: DrawingState | null = null
-	let status = 'Loading...'
+	let initialData = $state<DrawingState | null>(null)
+	let status = $state('Loading...')
+
+	// State for inline name editing
+	let isEditingName = $state(false)
+	let editingName = $state('')
+	let currentDrawing = $state<Drawing | undefined>(undefined)
 
 	onMount(() => {
 		if (!drawingId || isNaN(drawingId)) {
@@ -27,6 +33,9 @@
 			return
 		}
 
+		// Store current drawing reference
+		currentDrawing = drawing
+
 		// Load drawing data
 		try {
 			initialData = loadDrawingById(drawingId)
@@ -36,6 +45,40 @@
 			status = 'Error loading drawing'
 		}
 	})
+
+	// Inline editing functions
+	function startEditingName() {
+		if (!currentDrawing) return
+		isEditingName = true
+		editingName = currentDrawing.name
+	}
+
+	function saveNameEdit() {
+		if (!currentDrawing) return
+
+		const success = drawingsStore.updateDrawingName(drawingId, editingName)
+
+		if (success) {
+			isEditingName = false
+			// Update local reference
+			currentDrawing = drawingsStore.getDrawing(drawingId)
+		}
+		// If validation fails (empty name), keep editing mode active
+	}
+
+	function cancelNameEdit() {
+		isEditingName = false
+		editingName = ''
+	}
+
+	function handleNameKeydown(event: KeyboardEvent) {
+		if (event.key === 'Enter') {
+			event.preventDefault()
+			saveNameEdit()
+		} else if (event.key === 'Escape') {
+			cancelNameEdit()
+		}
+	}
 </script>
 
 <div class="h-screen w-screen flex flex-col bg-base-100">
@@ -59,6 +102,27 @@
 			</svg>
 			Back
 		</a>
+
+		<!-- Center: Drawing Name -->
+		<div class="flex-1 flex justify-center px-4">
+			{#if isEditingName}
+				<input
+					type="text"
+					class="input input-bordered input-sm w-full max-w-md text-center"
+					bind:value={editingName}
+					onblur={saveNameEdit}
+					onkeydown={handleNameKeydown}
+				/>
+			{:else if currentDrawing}
+				<button
+					class="text-lg font-semibold hover:text-primary hover:underline cursor-pointer transition-colors px-2"
+					onclick={startEditingName}
+					title="Click to edit name"
+				>
+					{currentDrawing.name}
+				</button>
+			{/if}
+		</div>
 
 		<!-- Right: Status indicator -->
 		<div class="flex items-center gap-2">

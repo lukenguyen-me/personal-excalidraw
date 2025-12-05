@@ -3,6 +3,10 @@
 	import { drawingsStore } from '$lib/stores/mockDrawings'
 	import type { ID } from '$lib/types'
 
+	// State for inline name editing
+	let editingId = $state<ID | null>(null)
+	let editingValue = $state('')
+
 	function formatDate(date: Date): string {
 		return new Date(date).toLocaleDateString('en-US', {
 			year: 'numeric',
@@ -31,6 +35,38 @@
 
 	function handleDelete(id: ID) {
 		drawingsStore.deleteDrawing(id)
+	}
+
+	// Inline editing functions
+	function startEditing(id: ID, currentName: string) {
+		editingId = id
+		editingValue = currentName
+	}
+
+	function saveEdit() {
+		if (editingId === null) return
+
+		const success = drawingsStore.updateDrawingName(editingId, editingValue)
+
+		if (success) {
+			editingId = null
+			editingValue = ''
+		}
+		// If validation fails (empty name), keep editing mode active
+	}
+
+	function cancelEdit() {
+		editingId = null
+		editingValue = ''
+	}
+
+	function handleKeydown(event: KeyboardEvent) {
+		if (event.key === 'Enter') {
+			event.preventDefault()
+			saveEdit()
+		} else if (event.key === 'Escape') {
+			cancelEdit()
+		}
 	}
 </script>
 
@@ -70,7 +106,25 @@
 				<tbody>
 					{#each $drawingsStore as drawing}
 						<tr>
-							<td class="font-medium">{drawing.name}</td>
+							<td class="font-medium">
+								{#if editingId === drawing.id}
+									<input
+										type="text"
+										class="input input-bordered input-sm w-full max-w-xs"
+										bind:value={editingValue}
+										onblur={saveEdit}
+										onkeydown={handleKeydown}
+									/>
+								{:else}
+									<button
+										class="text-left hover:text-primary hover:underline cursor-pointer transition-colors"
+										onclick={() => startEditing(drawing.id, drawing.name)}
+										title="Click to edit name"
+									>
+										{drawing.name}
+									</button>
+								{/if}
+							</td>
 							<td>{formatDate(drawing.createdAt)}</td>
 							<td>{formatDate(drawing.updatedAt)}</td>
 							<td class="text-right">

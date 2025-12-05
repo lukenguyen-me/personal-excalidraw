@@ -8,7 +8,55 @@ export interface Drawing {
 	updatedAt: Date
 }
 
-// Mock data - 8 sample drawings
+// localStorage key for persisting drawing metadata
+const METADATA_STORAGE_KEY = 'excalidraw-drawings-metadata'
+
+// Maximum length for drawing names
+const MAX_NAME_LENGTH = 100
+
+// Helper function to save drawings metadata to localStorage
+function saveDrawingsMetadata(drawings: Drawing[]) {
+	// Check if we're running in a browser environment
+	if (typeof window === 'undefined') {
+		return
+	}
+
+	try {
+		localStorage.setItem(METADATA_STORAGE_KEY, JSON.stringify(drawings))
+	} catch (error) {
+		if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+			console.error('localStorage quota exceeded for metadata')
+		} else {
+			console.error('Failed to save drawings metadata:', error)
+		}
+	}
+}
+
+// Helper function to load drawings metadata from localStorage
+function loadDrawingsMetadata(): Drawing[] {
+	// Check if we're running in a browser environment
+	if (typeof window === 'undefined') {
+		return mockDrawingsData
+	}
+
+	try {
+		const saved = localStorage.getItem(METADATA_STORAGE_KEY)
+		if (!saved) return mockDrawingsData
+
+		const parsed = JSON.parse(saved)
+		// Convert date strings back to Date objects
+		return parsed.map((d: any) => ({
+			...d,
+			createdAt: new Date(d.createdAt),
+			updatedAt: new Date(d.updatedAt)
+		}))
+	} catch (error) {
+		console.error('Failed to load drawings metadata:', error)
+		return mockDrawingsData
+	}
+}
+
+// Mock data - 8 sample drawings (used as fallback if localStorage is empty)
 const mockDrawingsData: Drawing[] = [
 	{
 		id: 1,
@@ -61,7 +109,7 @@ const mockDrawingsData: Drawing[] = [
 ]
 
 function createDrawingsStore() {
-	const { subscribe, set, update } = writable<Drawing[]>(mockDrawingsData)
+	const { subscribe, set, update } = writable<Drawing[]>(loadDrawingsMetadata())
 
 	return {
 		subscribe,
@@ -82,15 +130,52 @@ function createDrawingsStore() {
 			return drawings.find((d) => d.id === id)
 		},
 		addDrawing: (drawing: Drawing) => {
-			update((drawings) => [...drawings, drawing])
+			update((drawings) => {
+				const updated = [...drawings, drawing]
+				saveDrawingsMetadata(updated)
+				return updated
+			})
+		},
+		updateDrawingName: (id: ID, newName: string) => {
+			// Validate and sanitize input
+			let sanitizedName = newName.trim()
+
+			// Prevent empty names
+			if (!sanitizedName) {
+				return false
+			}
+
+			// Enforce maximum length
+			if (sanitizedName.length > MAX_NAME_LENGTH) {
+				sanitizedName = sanitizedName.substring(0, MAX_NAME_LENGTH)
+			}
+
+			// Update the drawing name and timestamp
+			update((drawings) => {
+				const updated = drawings.map((d) =>
+					d.id === id ? { ...d, name: sanitizedName, updatedAt: new Date() } : d
+				)
+				saveDrawingsMetadata(updated)
+				return updated
+			})
+
+			return true
 		},
 		updateTimestamp: (id: ID) => {
-			update((drawings) =>
-				drawings.map((d) => (d.id === id ? { ...d, updatedAt: new Date() } : d))
-			)
+			update((drawings) => {
+				const updated = drawings.map((d) =>
+					d.id === id ? { ...d, updatedAt: new Date() } : d
+				)
+				saveDrawingsMetadata(updated)
+				return updated
+			})
 		},
 		deleteDrawing: (id: ID) => {
-			update((drawings) => drawings.filter((d) => d.id !== id))
+			update((drawings) => {
+				const updated = drawings.filter((d) => d.id !== id)
+				saveDrawingsMetadata(updated)
+				return updated
+			})
 			// Also delete the drawing content from localStorage
 			const { deleteDrawingById } = require('./drawing')
 			deleteDrawingById(id)
