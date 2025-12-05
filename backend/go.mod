@@ -1,7 +1,8 @@
 module github.com/personal-excalidraw/backend
 
-go 1.21
+go 1.24.0
 
 require (
-	// Add dependencies here as needed
+	github.com/google/uuid v1.6.0
+	github.com/joho/godotenv v1.5.1
 )

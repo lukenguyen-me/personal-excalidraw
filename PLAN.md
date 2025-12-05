@@ -23,6 +23,7 @@ This document outlines the development roadmap for Personal Excalidraw.
 **Status**: In Progress
 
 ### Completed
+
 - [x] Connect drawing editor to load/save specific drawings
 - [x] LocalStorage persistence with per-drawing storage (`excalidraw-drawing-{id}`)
 - [x] Auto-save with 1-second debounce for performance
@@ -30,13 +31,10 @@ This document outlines the development roadmap for Personal Excalidraw.
 - [x] ID type abstraction for consistent type safety
 - [x] Drawing metadata timestamp synchronization
 - [x] Data validation and error handling (corrupted data, quota exceeded)
-
-### In Progress
-- [ ] Add drawing name editing
-- [ ] Export/Import functionality (JSON, PNG, SVG)
-- [ ] Drawing history management (undo/redo persistence)
+- [x] Add drawing name editing
 
 ### Goals
+
 - Replace all mock data with real localStorage-backed data
 - Implement full CRUD operations for drawings
 - Add data import/export capabilities
@@ -47,6 +45,7 @@ This document outlines the development roadmap for Personal Excalidraw.
 **Status**: Not Started
 
 ### Backend Development
+
 - [ ] Set up Go project structure
 - [ ] Implement PostgreSQL database schema
 - [ ] Create RESTful API endpoints:
@@ -59,24 +58,28 @@ This document outlines the development roadmap for Personal Excalidraw.
 - [ ] Implement error handling and validation
 
 ### Frontend Integration
+
 - [ ] Create API client service
 - [ ] Replace localStorage calls with API calls
 - [ ] Add loading states and error handling
 - [ ] Implement data synchronization
 
 ### Authentication & Security
+
 - [ ] User authentication system
 - [ ] JWT token management
 - [ ] Protected API routes
 - [ ] User session handling
 
 ### Cloud Synchronization
+
 - [ ] Real-time sync between devices
 - [ ] Conflict resolution strategy
 - [ ] Offline mode support
 - [ ] Multi-user support
 
 ### Goals
+
 - Transition from local-only to cloud-backed storage
 - Enable cross-device access
 - Prepare for multi-user features
@@ -86,6 +89,7 @@ This document outlines the development roadmap for Personal Excalidraw.
 **Status**: Not Started
 
 ### Search & Organization
+
 - [ ] Search and filter drawings by name
 - [ ] Advanced search (by date, tags, content)
 - [ ] Sorting options (name, created date, updated date)
@@ -93,18 +97,21 @@ This document outlines the development roadmap for Personal Excalidraw.
 - [ ] Bulk operations (delete, export multiple)
 
 ### Visual Improvements
+
 - [ ] Drawing thumbnails/previews in list view
 - [ ] Grid view option (alternative to table)
 - [ ] Preview modal on hover
 - [ ] Canvas thumbnails generation
 
 ### Categorization
+
 - [ ] Tags and categories system
 - [ ] Color-coded labels
 - [ ] Custom folders/collections
 - [ ] Favorites/starred drawings
 
 ### Collaboration
+
 - [ ] Sharing capabilities (public links)
 - [ ] Collaborative editing (real-time)
 - [ ] Comments and annotations
@@ -112,12 +119,14 @@ This document outlines the development roadmap for Personal Excalidraw.
 - [ ] Access control (view/edit permissions)
 
 ### Export Options
+
 - [ ] Batch export (multiple drawings)
 - [ ] Multiple format support (PNG, SVG, PDF)
 - [ ] Custom export settings (resolution, background)
 - [ ] Automated backups
 
 ### Goals
+
 - Enhance user experience with advanced features
 - Support collaboration workflows
 - Provide professional export options
@@ -125,24 +134,28 @@ This document outlines the development roadmap for Personal Excalidraw.
 ## Future Considerations
 
 ### Performance
+
 - [ ] Lazy loading for large drawing lists
 - [ ] Canvas rendering optimization
 - [ ] Image compression for embedded files
 - [ ] Cache management
 
 ### Mobile Support
+
 - [ ] Responsive mobile UI
 - [ ] Touch gestures optimization
 - [ ] Mobile-friendly toolbar
 - [ ] Progressive Web App (PWA)
 
 ### Integrations
+
 - [ ] Import from other drawing tools
 - [ ] Export to Figma, Miro, etc.
 - [ ] Markdown embedding
 - [ ] API for third-party integrations
 
 ### Analytics
+
 - [ ] Usage statistics
 - [ ] Drawing metrics
 - [ ] Performance monitoring
@@ -150,16 +163,17 @@ This document outlines the development roadmap for Personal Excalidraw.
 
 ## Milestones
 
-| Phase | Target | Status |
-|-------|--------|--------|
-| Phase 1: Frontend Infrastructure | ✅ Complete | Done |
-| Phase 2: Local Storage | 🚧 ~75% | In Progress |
-| Phase 3: Backend Integration | 📅 Planned | Not Started |
-| Phase 4: Enhanced Features | 📅 Planned | Not Started |
+| Phase                            | Target      | Status      |
+| -------------------------------- | ----------- | ----------- |
+| Phase 1: Frontend Infrastructure | ✅ Complete | Done        |
+| Phase 2: Local Storage           | 🚧 ~75%     | In Progress |
+| Phase 3: Backend Integration     | 📅 Planned  | Not Started |
+| Phase 4: Enhanced Features       | 📅 Planned  | Not Started |
 
 ## Current Priority
 
 **Focus**: Complete Phase 2 by finishing:
+
 1. Drawing name editing functionality
 2. Export/Import capabilities
 3. Drawing history persistence
