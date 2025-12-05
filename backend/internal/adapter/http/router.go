@@ -13,6 +13,7 @@ import (
 func NewRouter(
 	cfg *config.Config,
 	healthHandler *handler.HealthHandler,
+	drawingHandler *handler.DrawingHandler,
 	logger *slog.Logger,
 ) http.Handler {
 	// Create new ServeMux with Go 1.22+ routing
@@ -20,6 +21,9 @@ func NewRouter(
 
 	// Health check endpoint
 	mux.HandleFunc("GET /health", healthHandler.Check)
+
+	// Drawing API endpoints (nginx strips /api prefix)
+	mux.HandleFunc("GET /drawings", drawingHandler.ListDrawings)
 
 	// Apply middleware stack (in reverse order - outermost first)
 	var handler http.Handler = mux
