@@ -2,39 +2,25 @@
 
 A self-hosted, open-source drawing application built on Excalidraw. Create and manage your diagrams with a clean, modern interface.
 
-## Features
+## Why Personal Excalidraw?
+
+Personal Excalidraw gives you a self-hosted alternative to cloud-based drawing tools. Your drawings stay on your machine (for now) and will sync to your own server when the backend is ready. It's built with modern web technologies and designed for easy deployment.
+
+**Use Cases:**
+- Architecture diagrams
+- Wireframes and mockups
+- Mind maps and brainstorming
+- Technical documentation
+- Teaching and presentations
+
+## Key Features
 
 - Free drawing application based on Excalidraw
-- Drawings list with create, edit, and delete operations
-- Local-first data storage (localStorage/future API integration)
+- Auto-save with 1-second debounce
+- Local-first data storage (localStorage)
 - Modern UI with SvelteKit and DaisyUI wireframe theme
 - Responsive design with clean table layout
-- Future: Go backend for cloud synchronization and PostgreSQL storage
-
-## Project Structure
-
-```
-personal-excalidraw/
-├── frontend/                  # SvelteKit + TypeScript frontend
-│   ├── src/
-│   │   ├── routes/
-│   │   │   ├── +layout.svelte           # Root layout
-│   │   │   ├── +page.svelte             # Home page (drawings list)
-│   │   │   └── drawing/[id]/
-│   │   │       └── +page.svelte         # Drawing editor page
-│   │   ├── lib/
-│   │   │   ├── components/
-│   │   │   │   └── ExcalidrawWrapper.svelte  # Excalidraw integration
-│   │   │   └── stores/
-│   │   │       ├── mockDrawings.ts      # Mock data store
-│   │   │       ├── drawing.ts           # Drawing state
-│   │   │       ├── excalidraw.ts        # Excalidraw API
-│   │   │       └── ui.ts                # UI state
-│   │   └── routes/layout.css            # Global styles
-├── backend/                   # Go backend (stub for future)
-├── docker-compose.yml         # Development environment
-└── Dockerfile                 # Production build
-```
+- Future: Go backend for cloud synchronization
 
 ## Quick Start
 
@@ -42,8 +28,7 @@ personal-excalidraw/
 
 - Node.js 18+ (for frontend development)
 - pnpm (package manager)
-- Go 1.21+ (for future backend development)
-- Docker & Docker Compose (for containerized deployment)
+- Docker & Docker Compose (optional, for containerized deployment)
 
 ### Development
 
@@ -65,7 +50,7 @@ docker-compose up
 
 This starts:
 - Frontend dev server on `http://localhost:5173`
-- Backend server on `http://localhost:8080` (stub)
+- Backend server on `http://localhost:8080` (stub, for future use)
 
 ### Building for Production
 
@@ -74,133 +59,10 @@ docker build -t personal-excalidraw:latest .
 docker run -p 8080:8080 personal-excalidraw:latest
 ```
 
-## Tech Stack
+## Documentation
 
-### Frontend
-- **Framework**: SvelteKit 2.48.5 with Svelte 5.43.8
-- **Build Tool**: Vite 7.2.6
-- **Styling**: Tailwind CSS 4.1.17 + DaisyUI 5.5.5 (Wireframe theme)
-- **Drawing Engine**: @excalidraw/excalidraw (React wrapper)
-- **State Management**: Svelte 5 Stores (runes-based)
-- **Language**: TypeScript 5.7.3
-
-### Backend (Future)
-- **Language**: Go (net/http)
-- **Database**: PostgreSQL
-- **API**: RESTful API for drawing CRUD operations
-
-### Deployment
-- **Containerization**: Docker + Docker Compose
-- **Hosting**: Self-hosted
-
-## Current Features
-
-### Home Page (/)
-- List of all drawings in a clean table format
-- Columns: Name, Created At, Updated At, Actions
-- **New** button to create a new drawing
-- **Edit** button (icon) to open drawing editor
-- **Delete** button (icon) for removing drawings (placeholder)
-- Wireframe theme with responsive layout
-
-### Drawing Editor (/drawing/[id])
-- Full Excalidraw canvas integration
-- Header with:
-  - Back button to return to drawings list
-  - Status indicator showing loading/ready states
-- Dynamic routing with drawing ID parameter
-- **Auto-save**: Drawings automatically save 1 second after stopping edits
-- **Data persistence**: All changes saved to localStorage
-- **Drawing loading**: Previous work loads when returning to a drawing
-
-### State Management
-- **Drawing Store**: Manages drawing elements, app state, and files with ID-aware persistence
-- **Excalidraw Store**: Handles Excalidraw API reference
-- **UI Store**: Tracks UI state (sidebar, zoom, tools, etc.)
-- **Mock Drawings Store**: Manages drawing metadata with reactive updates
-- **Type System**: Centralized `ID` type for consistent identifier handling
-
-## Development Roadmap
-
-### Phase 1: Frontend Infrastructure ✅
-
-- [x] Project initialization
-- [x] SvelteKit setup with TypeScript
-- [x] Tailwind CSS + DaisyUI integration
-- [x] ExcalidrawWrapper component with React integration
-- [x] Svelte stores for state management
-- [x] Home page with drawings list
-- [x] Drawing editor with dynamic routing
-- [x] Wireframe theme configuration
-- [x] Mock data with 8 sample drawings
-
-### Phase 2: Local Storage & Real Data 🚧
-
-- [x] Connect drawing editor to load/save specific drawings
-- [x] LocalStorage persistence with per-drawing storage (excalidraw-drawing-{id})
-- [x] Auto-save with 1-second debounce for performance
-- [x] Implement actual delete functionality (removes both metadata and content)
-- [x] ID type abstraction for consistent type safety
-- [x] Drawing metadata timestamp synchronization
-- [x] Data validation and error handling (corrupted data, quota exceeded)
-- [ ] Add drawing name editing
-- [ ] Export/Import functionality (JSON, PNG, SVG)
-- [ ] Drawing history management (undo/redo persistence)
-
-### Phase 3: Backend Integration
-
-- [ ] Go API endpoints (CRUD operations)
-- [ ] PostgreSQL database schema
-- [ ] Replace mock data with real API calls
-- [ ] User authentication
-- [ ] Cloud synchronization
-- [ ] Multi-user support
-
-### Phase 4: Enhanced Features
-
-- [ ] Search and filter drawings
-- [ ] Sorting by name/date
-- [ ] Pagination for large drawing lists
-- [ ] Drawing thumbnails/previews
-- [ ] Tags and categories
-- [ ] Sharing capabilities
-
-## Data Storage
-
-### LocalStorage Schema (Phase 2)
-
-Currently, drawings are stored in localStorage with the following schema:
-
-```
-Key: excalidraw-drawing-{id}
-Value: {
-  elements: [...],      // Excalidraw drawing elements (shapes, lines, text, etc.)
-  appState: {...},      // Canvas state (zoom, scroll position, view mode, etc.)
-  files: {...}          // Embedded images and files
-}
-```
-
-**Features:**
-- Per-drawing storage with unique keys
-- Automatic JSON serialization/deserialization
-- Data validation on load (validates structure and element arrays)
-- Error handling for corrupted data and quota exceeded
-- Automatic cleanup of invalid entries
-
-**Limitations:**
-- localStorage has ~5-10MB limit per domain
-- Data is browser-specific (not synced across devices)
-- Will be replaced with backend API in Phase 3
-
-## API Endpoints (Future - Phase 3)
-
-```
-GET    /api/drawings          # List all drawings
-GET    /api/drawings/:id      # Get specific drawing
-POST   /api/drawings          # Create new drawing
-PUT    /api/drawings/:id      # Update drawing
-DELETE /api/drawings/:id      # Delete drawing
-```
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Technical architecture, tech stack, and implementation details
+- [PLAN.md](PLAN.md) - Development roadmap and feature planning
 
 ## Contributing
 
