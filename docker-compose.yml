@@ -1,19 +1,30 @@
 version: '3.8'
 
 services:
+  nginx:
+    image: nginx:alpine
+    container_name: personal-excalidraw-nginx
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - backend
+
   frontend:
     build:
       context: .
       dockerfile: Dockerfile
       target: frontend-builder
     container_name: personal-excalidraw-frontend
-    ports:
-      - '5173:5173'
+    expose:
+      - '5173'
     volumes:
       - ./frontend:/app/frontend
       - /app/frontend/node_modules
     working_dir: /app/frontend
-    command: npm run dev
+    command: pnpm run dev --host
     environment:
       - NODE_ENV=development
 
@@ -22,12 +33,12 @@ services:
       context: .
       dockerfile: Dockerfile.backend
     container_name: personal-excalidraw-backend
-    ports:
-      - '8080:8080'
+    expose:
+      - '8080'
     volumes:
       - ./backend:/app
     working_dir: /app
-    command: go run cmd/server/main.go
+    command: air -c .air.toml
     environment:
       - GO_ENV=development
       - DB_HOST=postgres

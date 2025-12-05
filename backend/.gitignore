@@ -1,0 +1,11 @@
+# Air hot-reload temporary files
+tmp/
+
+# Build artifacts
+bin/
+
+# Test coverage
+coverage.out
+
+# Environment files
+.env

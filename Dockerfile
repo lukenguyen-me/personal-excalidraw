@@ -3,21 +3,28 @@
 # Stage 1: Build frontend
 FROM node:20-alpine AS frontend-builder
 
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
 WORKDIR /app/frontend
 
-COPY frontend/package*.json ./
-RUN npm ci
+COPY frontend/package.json frontend/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 
 COPY frontend/ .
-RUN npm run build
+RUN pnpm run build
 
 # Stage 2: Build backend
-FROM golang:1.21-alpine AS backend-builder
+FROM golang:1.25-alpine3.22 AS backend-builder
+
+RUN apk add --no-cache git
 
 WORKDIR /app
 
 COPY backend/ ./backend/
-RUN cd backend && go build -o server main.go
+
+# Build the backend binary
+RUN cd backend && go build -o server cmd/server/main.go
 
 # Stage 3: Runtime
 FROM alpine:latest
