@@ -854,3 +854,126 @@ func TestUpdateDrawing(t *testing.T) {
 		})
 	}
 }
+
+func TestDeleteDrawing(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
+
+	tests := []struct {
+		name           string
+		drawingID      string
+		mockRepo       *mockDrawingRepository
+		expectedStatus int
+		validateResp   func(t *testing.T, body []byte)
+	}{
+		{
+			name:      "successful delete",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					d, _ := drawing.NewDrawing("Test Drawing", map[string]interface{}{
+						"elements": []interface{}{},
+					})
+					return d, nil
+				},
+				deleteFunc: func(ctx context.Context, id uuid.UUID) error {
+					return nil
+				},
+			},
+			expectedStatus: http.StatusNoContent,
+			validateResp: func(t *testing.T, body []byte) {
+				if len(body) > 0 {
+					t.Errorf("expected empty body for 204, got %s", string(body))
+				}
+			},
+		},
+		{
+			name:      "drawing not found",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					return nil, drawing.ErrDrawingNotFound
+				},
+			},
+			expectedStatus: http.StatusNotFound,
+			validateResp: func(t *testing.T, body []byte) {
+				var resp ErrorResponse
+				if err := json.Unmarshal(body, &resp); err != nil {
+					t.Fatalf("failed to unmarshal error response: %v", err)
+				}
+				if resp.Error != "not_found" {
+					t.Errorf("expected error type 'not_found', got '%s'", resp.Error)
+				}
+			},
+		},
+		{
+			name:           "invalid UUID in path",
+			drawingID:      "invalid-uuid",
+			mockRepo:       &mockDrawingRepository{},
+			expectedStatus: http.StatusBadRequest,
+			validateResp: func(t *testing.T, body []byte) {
+				var resp ErrorResponse
+				if err := json.Unmarshal(body, &resp); err != nil {
+					t.Fatalf("failed to unmarshal error response: %v", err)
+				}
+				if resp.Error != "invalid_request" {
+					t.Errorf("expected error type 'invalid_request', got '%s'", resp.Error)
+				}
+			},
+		},
+		{
+			name:           "empty drawing ID in path",
+			drawingID:      "",
+			mockRepo:       &mockDrawingRepository{},
+			expectedStatus: http.StatusBadRequest,
+			validateResp: func(t *testing.T, body []byte) {
+				var resp ErrorResponse
+				if err := json.Unmarshal(body, &resp); err != nil {
+					t.Fatalf("failed to unmarshal error response: %v", err)
+				}
+				if resp.Error != "invalid_request" {
+					t.Errorf("expected error type 'invalid_request', got '%s'", resp.Error)
+				}
+			},
+		},
+		{
+			name:      "repository error",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					return nil, errors.New("database connection failed")
+				},
+			},
+			expectedStatus: http.StatusInternalServerError,
+			validateResp: func(t *testing.T, body []byte) {
+				var resp ErrorResponse
+				if err := json.Unmarshal(body, &resp); err != nil {
+					t.Fatalf("failed to unmarshal error response: %v", err)
+				}
+				if resp.Error != "internal_error" {
+					t.Errorf("expected error type 'internal_error', got '%s'", resp.Error)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			service := drawingapp.NewService(tt.mockRepo, logger)
+			handler := NewDrawingHandler(service, logger)
+
+			req := httptest.NewRequest(http.MethodDelete, "/drawings/"+tt.drawingID, nil)
+			req.SetPathValue("id", tt.drawingID)
+			w := httptest.NewRecorder()
+
+			handler.DeleteDrawing(w, req)
+
+			if w.Code != tt.expectedStatus {
+				t.Errorf("expected status %d, got %d", tt.expectedStatus, w.Code)
+			}
+
+			if tt.validateResp != nil {
+				tt.validateResp(t, w.Body.Bytes())
+			}
+		})
+	}
+}

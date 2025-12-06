@@ -925,3 +925,85 @@ func TestUpdateDrawing(t *testing.T) {
 		})
 	}
 }
+
+func TestDeleteDrawing(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
+
+	tests := []struct {
+		name        string
+		drawingID   string
+		mockRepo    *mockDrawingRepository
+		expectError bool
+	}{
+		{
+			name:      "successful delete",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					d, _ := drawing.NewDrawing("Test Drawing", map[string]interface{}{
+						"elements": []interface{}{},
+					})
+					return d, nil
+				},
+				deleteFunc: func(ctx context.Context, id uuid.UUID) error {
+					return nil
+				},
+			},
+			expectError: false,
+		},
+		{
+			name:      "drawing not found",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					return nil, drawing.ErrDrawingNotFound
+				},
+			},
+			expectError: true,
+		},
+		{
+			name:        "invalid UUID format",
+			drawingID:   "invalid-uuid",
+			mockRepo:    &mockDrawingRepository{},
+			expectError: true,
+		},
+		{
+			name:        "empty UUID string",
+			drawingID:   "",
+			mockRepo:    &mockDrawingRepository{},
+			expectError: true,
+		},
+		{
+			name:      "repository delete error",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					d, _ := drawing.NewDrawing("Test Drawing", map[string]interface{}{
+						"elements": []interface{}{},
+					})
+					return d, nil
+				},
+				deleteFunc: func(ctx context.Context, id uuid.UUID) error {
+					return errors.New("database connection failed")
+				},
+			},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			service := NewService(tt.mockRepo, logger)
+			ctx := context.Background()
+
+			err := service.DeleteDrawing(ctx, tt.drawingID)
+
+			if tt.expectError && err == nil {
+				t.Error("expected error but got none")
+			}
+			if !tt.expectError && err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+		})
+	}
+}

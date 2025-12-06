@@ -234,3 +234,30 @@ func (h *DrawingHandler) UpdateDrawing(w http.ResponseWriter, r *http.Request) {
 
 	respondJSON(w, http.StatusOK, response)
 }
+
+// DeleteDrawing handles DELETE /api/drawings/{id}
+func (h *DrawingHandler) DeleteDrawing(w http.ResponseWriter, r *http.Request) {
+	h.logger.Info("handling delete drawing request")
+
+	// Extract ID from path
+	id := r.PathValue("id")
+	if id == "" {
+		h.logger.Error("missing drawing ID in path")
+		response := ErrorResponse{
+			Error:   "invalid_request",
+			Message: "missing drawing ID",
+		}
+		respondJSON(w, http.StatusBadRequest, response)
+		return
+	}
+
+	// Call service
+	err := h.service.DeleteDrawing(r.Context(), id)
+	if err != nil {
+		respondError(w, err, h.logger)
+		return
+	}
+
+	// Return 204 No Content
+	w.WriteHeader(http.StatusNoContent)
+}

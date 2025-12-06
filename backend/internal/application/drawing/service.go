@@ -140,3 +140,32 @@ func (s *Service) UpdateDrawing(ctx context.Context, id string, input UpdateDraw
 
 	return ToOutput(d), nil
 }
+
+// DeleteDrawing deletes an existing drawing
+func (s *Service) DeleteDrawing(ctx context.Context, id string) error {
+	s.logger.Info("deleting drawing", "id", id)
+
+	// Parse UUID from string
+	drawingID, err := uuid.Parse(id)
+	if err != nil {
+		s.logger.Error("invalid drawing ID format", "id", id, "error", err)
+		return fmt.Errorf("invalid drawing ID: %w", err)
+	}
+
+	// Check if drawing exists
+	_, err = s.repo.FindByID(ctx, drawingID)
+	if err != nil {
+		s.logger.Error("failed to get drawing", "id", drawingID, "error", err)
+		return err
+	}
+
+	// Delete from repository
+	if err := s.repo.Delete(ctx, drawingID); err != nil {
+		s.logger.Error("failed to delete drawing", "id", drawingID, "error", err)
+		return fmt.Errorf("failed to delete drawing: %w", err)
+	}
+
+	s.logger.Info("drawing deleted successfully", "id", drawingID)
+
+	return nil
+}

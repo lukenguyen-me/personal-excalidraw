@@ -27,6 +27,7 @@ func NewRouter(
 	mux.HandleFunc("GET /drawings/{id}", drawingHandler.GetDrawing)
 	mux.HandleFunc("GET /drawings", drawingHandler.ListDrawings)
 	mux.HandleFunc("PUT /drawings/{id}", drawingHandler.UpdateDrawing)
+	mux.HandleFunc("DELETE /drawings/{id}", drawingHandler.DeleteDrawing)
 
 	// Apply middleware stack (in reverse order - outermost first)
 	var handler http.Handler = mux
