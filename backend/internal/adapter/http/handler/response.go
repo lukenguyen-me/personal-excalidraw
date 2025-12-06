@@ -16,6 +16,20 @@ type ErrorResponse struct {
 	Details map[string]string `json:"details,omitempty"`
 }
 
+// parseJSON parses JSON from request body
+func parseJSON(r *http.Request, v interface{}) error {
+	if r.Body == nil {
+		return errors.New("request body is empty")
+	}
+	defer r.Body.Close()
+
+	if err := json.NewDecoder(r.Body).Decode(v); err != nil {
+		return errors.New("invalid JSON format")
+	}
+
+	return nil
+}
+
 // respondJSON sends a JSON response
 func respondJSON(w http.ResponseWriter, status int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")

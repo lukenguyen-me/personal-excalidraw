@@ -22,6 +22,12 @@ func NewDrawingHandler(service *drawingapp.Service, logger *slog.Logger) *Drawin
 	}
 }
 
+// CreateDrawingRequest represents the HTTP request for creating a drawing
+type CreateDrawingRequest struct {
+	Name string                 `json:"name"`
+	Data map[string]interface{} `json:"data"`
+}
+
 // DrawingResponse represents the HTTP response for a drawing
 type DrawingResponse struct {
 	ID        string                 `json:"id"`
@@ -37,6 +43,47 @@ type DrawingListResponse struct {
 	Total    int64              `json:"total"`
 	Limit    int                `json:"limit"`
 	Offset   int                `json:"offset"`
+}
+
+// CreateDrawing handles POST /api/drawings
+func (h *DrawingHandler) CreateDrawing(w http.ResponseWriter, r *http.Request) {
+	h.logger.Info("handling create drawing request")
+
+	// Parse request body
+	var req CreateDrawingRequest
+	if err := parseJSON(r, &req); err != nil {
+		respondError(w, err, h.logger)
+		return
+	}
+
+	// Validate request
+	if err := validateCreateDrawingRequest(&req); err != nil {
+		respondError(w, err, h.logger)
+		return
+	}
+
+	// Call service
+	input := drawingapp.CreateDrawingInput{
+		Name: req.Name,
+		Data: req.Data,
+	}
+
+	output, err := h.service.CreateDrawing(r.Context(), input)
+	if err != nil {
+		respondError(w, err, h.logger)
+		return
+	}
+
+	// Convert to HTTP response
+	response := DrawingResponse{
+		ID:        output.ID.String(),
+		Name:      output.Name,
+		Data:      output.Data,
+		CreatedAt: output.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt: output.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+	}
+
+	respondJSON(w, http.StatusCreated, response)
 }
 
 // ListDrawings handles GET /api/drawings

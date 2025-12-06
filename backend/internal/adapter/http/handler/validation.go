@@ -50,6 +50,15 @@ func ValidateUpdateDrawingRequest(name string, data map[string]interface{}) []Va
 	return ValidateCreateDrawingRequest(name, data)
 }
 
+// validateCreateDrawingRequest validates the CreateDrawingRequest
+func validateCreateDrawingRequest(req *CreateDrawingRequest) error {
+	errs := ValidateCreateDrawingRequest(req.Name, req.Data)
+	if len(errs) > 0 {
+		return fmt.Errorf("validation failed: %s", errs[0].Message)
+	}
+	return nil
+}
+
 // ParseUUID safely parses a UUID string
 func ParseUUID(s string) (uuid.UUID, error) {
 	if s == "" {

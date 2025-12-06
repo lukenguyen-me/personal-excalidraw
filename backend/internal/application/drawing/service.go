@@ -22,6 +22,28 @@ func NewService(repo drawing.Repository, logger *slog.Logger) *Service {
 	}
 }
 
+// CreateDrawing creates a new drawing
+func (s *Service) CreateDrawing(ctx context.Context, input CreateDrawingInput) (*DrawingOutput, error) {
+	s.logger.Info("creating drawing", "name", input.Name)
+
+	// Create domain drawing
+	d, err := drawing.NewDrawing(input.Name, input.Data)
+	if err != nil {
+		s.logger.Error("failed to create drawing domain object", "error", err)
+		return nil, fmt.Errorf("failed to create drawing: %w", err)
+	}
+
+	// Persist to repository
+	if err := s.repo.Create(ctx, d); err != nil {
+		s.logger.Error("failed to persist drawing", "error", err)
+		return nil, fmt.Errorf("failed to save drawing: %w", err)
+	}
+
+	s.logger.Info("drawing created successfully", "id", d.ID())
+
+	return ToOutput(d), nil
+}
+
 // ListDrawings retrieves all drawings with pagination
 func (s *Service) ListDrawings(ctx context.Context, input ListDrawingsInput) (*DrawingListOutput, error) {
 	s.logger.Info("listing drawings", "limit", input.Limit, "offset", input.Offset)
