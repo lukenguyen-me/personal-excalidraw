@@ -59,6 +59,15 @@ func validateCreateDrawingRequest(req *CreateDrawingRequest) error {
 	return nil
 }
 
+// validateUpdateDrawingRequest validates the UpdateDrawingRequest
+func validateUpdateDrawingRequest(req *UpdateDrawingRequest) error {
+	errs := ValidateUpdateDrawingRequest(req.Name, req.Data)
+	if len(errs) > 0 {
+		return fmt.Errorf("validation failed: %s", errs[0].Message)
+	}
+	return nil
+}
+
 // ParseUUID safely parses a UUID string
 func ParseUUID(s string) (uuid.UUID, error) {
 	if s == "" {

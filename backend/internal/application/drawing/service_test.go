@@ -619,3 +619,309 @@ func TestToOutputList(t *testing.T) {
 		t.Errorf("expected 'Drawing 2', got '%s'", outputs[1].Name)
 	}
 }
+
+func TestUpdateDrawing(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
+
+	tests := []struct {
+		name        string
+		drawingID   string
+		input       UpdateDrawingInput
+		mockRepo    *mockDrawingRepository
+		expectError bool
+		validateOut func(t *testing.T, out *DrawingOutput)
+	}{
+		{
+			name:      "successful update",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			input: UpdateDrawingInput{
+				Name: "Updated Drawing",
+				Data: map[string]interface{}{
+					"elements": []interface{}{},
+					"appState": map[string]interface{}{},
+				},
+			},
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					d, _ := drawing.NewDrawing("Original Drawing", map[string]interface{}{
+						"elements": []interface{}{},
+					})
+					return d, nil
+				},
+				updateFunc: func(ctx context.Context, d *drawing.Drawing) error {
+					return nil
+				},
+			},
+			expectError: false,
+			validateOut: func(t *testing.T, out *DrawingOutput) {
+				if out == nil {
+					t.Fatal("expected non-nil output")
+				}
+				if out.Name != "Updated Drawing" {
+					t.Errorf("expected name 'Updated Drawing', got '%s'", out.Name)
+				}
+				if out.ID == uuid.Nil {
+					t.Error("expected non-nil UUID")
+				}
+				if out.Data == nil {
+					t.Error("expected non-nil data")
+				}
+			},
+		},
+		{
+			name:      "drawing not found",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			input: UpdateDrawingInput{
+				Name: "Updated Drawing",
+				Data: map[string]interface{}{"elements": []interface{}{}},
+			},
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					return nil, drawing.ErrDrawingNotFound
+				},
+			},
+			expectError: true,
+			validateOut: func(t *testing.T, out *DrawingOutput) {
+				if out != nil {
+					t.Error("expected nil output on error")
+				}
+			},
+		},
+		{
+			name:      "invalid UUID format",
+			drawingID: "invalid-uuid",
+			input: UpdateDrawingInput{
+				Name: "Updated Drawing",
+				Data: map[string]interface{}{"elements": []interface{}{}},
+			},
+			mockRepo:    &mockDrawingRepository{},
+			expectError: true,
+			validateOut: func(t *testing.T, out *DrawingOutput) {
+				if out != nil {
+					t.Error("expected nil output on error")
+				}
+			},
+		},
+		{
+			name:      "empty UUID string",
+			drawingID: "",
+			input: UpdateDrawingInput{
+				Name: "Updated Drawing",
+				Data: map[string]interface{}{"elements": []interface{}{}},
+			},
+			mockRepo:    &mockDrawingRepository{},
+			expectError: true,
+			validateOut: func(t *testing.T, out *DrawingOutput) {
+				if out != nil {
+					t.Error("expected nil output on error")
+				}
+			},
+		},
+		{
+			name:      "empty name validation error",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			input: UpdateDrawingInput{
+				Name: "",
+				Data: map[string]interface{}{"elements": []interface{}{}},
+			},
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					d, _ := drawing.NewDrawing("Original", map[string]interface{}{"elements": []interface{}{}})
+					return d, nil
+				},
+			},
+			expectError: true,
+			validateOut: func(t *testing.T, out *DrawingOutput) {
+				if out != nil {
+					t.Error("expected nil output on error")
+				}
+			},
+		},
+		{
+			name:      "name too long validation error",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			input: UpdateDrawingInput{
+				Name: string(make([]byte, 300)), // Exceeds 255 character limit
+				Data: map[string]interface{}{"elements": []interface{}{}},
+			},
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					d, _ := drawing.NewDrawing("Original", map[string]interface{}{"elements": []interface{}{}})
+					return d, nil
+				},
+			},
+			expectError: true,
+			validateOut: func(t *testing.T, out *DrawingOutput) {
+				if out != nil {
+					t.Error("expected nil output on error")
+				}
+			},
+		},
+		{
+			name:      "nil data validation error",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			input: UpdateDrawingInput{
+				Name: "Updated",
+				Data: nil,
+			},
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					d, _ := drawing.NewDrawing("Original", map[string]interface{}{"elements": []interface{}{}})
+					return d, nil
+				},
+			},
+			expectError: true,
+			validateOut: func(t *testing.T, out *DrawingOutput) {
+				if out != nil {
+					t.Error("expected nil output on error")
+				}
+			},
+		},
+		{
+			name:      "complex data update",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			input: UpdateDrawingInput{
+				Name: "Complex Updated Drawing",
+				Data: map[string]interface{}{
+					"elements": []interface{}{
+						map[string]interface{}{
+							"type": "rectangle",
+							"x":    100,
+							"y":    200,
+						},
+					},
+					"appState": map[string]interface{}{
+						"viewBackgroundColor": "#000000",
+					},
+					"files": map[string]interface{}{},
+				},
+			},
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					d, _ := drawing.NewDrawing("Original", map[string]interface{}{"elements": []interface{}{}})
+					return d, nil
+				},
+				updateFunc: func(ctx context.Context, d *drawing.Drawing) error {
+					return nil
+				},
+			},
+			expectError: false,
+			validateOut: func(t *testing.T, out *DrawingOutput) {
+				if out == nil {
+					t.Fatal("expected non-nil output")
+				}
+				if out.Name != "Complex Updated Drawing" {
+					t.Errorf("expected name 'Complex Updated Drawing', got '%s'", out.Name)
+				}
+				elements, ok := out.Data["elements"]
+				if !ok {
+					t.Error("expected elements in data")
+				}
+				if elements == nil {
+					t.Error("expected non-nil elements")
+				}
+			},
+		},
+		{
+			name:      "repository update error",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			input: UpdateDrawingInput{
+				Name: "Updated Drawing",
+				Data: map[string]interface{}{"elements": []interface{}{}},
+			},
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					d, _ := drawing.NewDrawing("Original", map[string]interface{}{"elements": []interface{}{}})
+					return d, nil
+				},
+				updateFunc: func(ctx context.Context, d *drawing.Drawing) error {
+					return errors.New("database connection failed")
+				},
+			},
+			expectError: true,
+			validateOut: func(t *testing.T, out *DrawingOutput) {
+				if out != nil {
+					t.Error("expected nil output on error")
+				}
+			},
+		},
+		{
+			name:      "repository findByID error",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			input: UpdateDrawingInput{
+				Name: "Updated Drawing",
+				Data: map[string]interface{}{"elements": []interface{}{}},
+			},
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					return nil, errors.New("database connection failed")
+				},
+			},
+			expectError: true,
+			validateOut: func(t *testing.T, out *DrawingOutput) {
+				if out != nil {
+					t.Error("expected nil output on error")
+				}
+			},
+		},
+		{
+			name:      "verify updatedAt changes",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			input: UpdateDrawingInput{
+				Name: "Updated Drawing",
+				Data: map[string]interface{}{"elements": []interface{}{}},
+			},
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					// Create drawing with past timestamp
+					d, _ := drawing.Reconstitute(
+						uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+						"original",
+						"Original",
+						map[string]interface{}{"elements": []interface{}{}},
+						time.Now().Add(-24*time.Hour),
+						time.Now().Add(-24*time.Hour),
+					)
+					return d, nil
+				},
+				updateFunc: func(ctx context.Context, d *drawing.Drawing) error {
+					return nil
+				},
+			},
+			expectError: false,
+			validateOut: func(t *testing.T, out *DrawingOutput) {
+				if out == nil {
+					t.Fatal("expected non-nil output")
+				}
+				// UpdatedAt should be recent (within last second)
+				if time.Since(out.UpdatedAt) > time.Second {
+					t.Errorf("expected recent UpdatedAt, got %v", out.UpdatedAt)
+				}
+				// CreatedAt should be old (more than 1 hour ago)
+				if time.Since(out.CreatedAt) < time.Hour {
+					t.Errorf("expected old CreatedAt, got %v", out.CreatedAt)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			service := NewService(tt.mockRepo, logger)
+			ctx := context.Background()
+
+			output, err := service.UpdateDrawing(ctx, tt.drawingID, tt.input)
+
+			if tt.expectError && err == nil {
+				t.Error("expected error but got none")
+			}
+			if !tt.expectError && err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+
+			if tt.validateOut != nil {
+				tt.validateOut(t, output)
+			}
+		})
+	}
+}

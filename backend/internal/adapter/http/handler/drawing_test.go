@@ -553,3 +553,304 @@ func TestGetDrawing(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdateDrawing(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
+
+	tests := []struct {
+		name           string
+		drawingID      string
+		requestBody    interface{}
+		mockRepo       *mockDrawingRepository
+		expectedStatus int
+		validateResp   func(t *testing.T, body []byte)
+	}{
+		{
+			name:      "successful update",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			requestBody: UpdateDrawingRequest{
+				Name: "Updated Drawing",
+				Data: map[string]interface{}{
+					"elements": []interface{}{},
+					"appState": map[string]interface{}{},
+				},
+			},
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					d, _ := drawing.NewDrawing("Original", map[string]interface{}{"elements": []interface{}{}})
+					return d, nil
+				},
+				updateFunc: func(ctx context.Context, d *drawing.Drawing) error {
+					return nil
+				},
+			},
+			expectedStatus: http.StatusOK,
+			validateResp: func(t *testing.T, body []byte) {
+				var resp DrawingResponse
+				if err := json.Unmarshal(body, &resp); err != nil {
+					t.Fatalf("failed to unmarshal response: %v", err)
+				}
+				if resp.Name != "Updated Drawing" {
+					t.Errorf("expected name 'Updated Drawing', got '%s'", resp.Name)
+				}
+				if resp.ID == "" {
+					t.Error("expected non-empty ID")
+				}
+				if resp.Data == nil {
+					t.Error("expected non-nil data")
+				}
+			},
+		},
+		{
+			name:      "drawing not found",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			requestBody: UpdateDrawingRequest{
+				Name: "Updated Drawing",
+				Data: map[string]interface{}{"elements": []interface{}{}},
+			},
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					return nil, drawing.ErrDrawingNotFound
+				},
+			},
+			expectedStatus: http.StatusNotFound,
+			validateResp: func(t *testing.T, body []byte) {
+				var resp ErrorResponse
+				if err := json.Unmarshal(body, &resp); err != nil {
+					t.Fatalf("failed to unmarshal error response: %v", err)
+				}
+				if resp.Error != "not_found" {
+					t.Errorf("expected error type 'not_found', got '%s'", resp.Error)
+				}
+			},
+		},
+		{
+			name:      "invalid UUID in path",
+			drawingID: "invalid-uuid",
+			requestBody: UpdateDrawingRequest{
+				Name: "Updated Drawing",
+				Data: map[string]interface{}{"elements": []interface{}{}},
+			},
+			mockRepo:       &mockDrawingRepository{},
+			expectedStatus: http.StatusBadRequest,
+			validateResp: func(t *testing.T, body []byte) {
+				var resp ErrorResponse
+				if err := json.Unmarshal(body, &resp); err != nil {
+					t.Fatalf("failed to unmarshal error response: %v", err)
+				}
+				if resp.Error != "invalid_request" {
+					t.Errorf("expected error type 'invalid_request', got '%s'", resp.Error)
+				}
+			},
+		},
+		{
+			name:           "empty drawing ID in path",
+			drawingID:      "",
+			requestBody:    UpdateDrawingRequest{Name: "Updated", Data: map[string]interface{}{}},
+			mockRepo:       &mockDrawingRepository{},
+			expectedStatus: http.StatusBadRequest,
+			validateResp: func(t *testing.T, body []byte) {
+				var resp ErrorResponse
+				if err := json.Unmarshal(body, &resp); err != nil {
+					t.Fatalf("failed to unmarshal error response: %v", err)
+				}
+				if resp.Error != "invalid_request" {
+					t.Errorf("expected error type 'invalid_request', got '%s'", resp.Error)
+				}
+			},
+		},
+		{
+			name:           "empty request body",
+			drawingID:      "123e4567-e89b-12d3-a456-426614174000",
+			requestBody:    nil,
+			mockRepo:       &mockDrawingRepository{},
+			expectedStatus: http.StatusInternalServerError,
+			validateResp: func(t *testing.T, body []byte) {
+				var resp ErrorResponse
+				if err := json.Unmarshal(body, &resp); err != nil {
+					t.Fatalf("failed to unmarshal error response: %v", err)
+				}
+			},
+		},
+		{
+			name:      "invalid JSON body",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			requestBody: struct {
+				InvalidField string
+			}{InvalidField: "invalid"},
+			mockRepo:       &mockDrawingRepository{},
+			expectedStatus: http.StatusInternalServerError,
+			validateResp: func(t *testing.T, body []byte) {
+				var resp ErrorResponse
+				if err := json.Unmarshal(body, &resp); err != nil {
+					t.Fatalf("failed to unmarshal error response: %v", err)
+				}
+			},
+		},
+		{
+			name:      "validation error - empty name",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			requestBody: UpdateDrawingRequest{
+				Name: "",
+				Data: map[string]interface{}{"elements": []interface{}{}},
+			},
+			mockRepo:       &mockDrawingRepository{},
+			expectedStatus: http.StatusInternalServerError,
+			validateResp: func(t *testing.T, body []byte) {
+				var resp ErrorResponse
+				if err := json.Unmarshal(body, &resp); err != nil {
+					t.Fatalf("failed to unmarshal error response: %v", err)
+				}
+			},
+		},
+		{
+			name:      "validation error - nil data",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			requestBody: UpdateDrawingRequest{
+				Name: "Updated",
+				Data: nil,
+			},
+			mockRepo:       &mockDrawingRepository{},
+			expectedStatus: http.StatusInternalServerError,
+			validateResp: func(t *testing.T, body []byte) {
+				var resp ErrorResponse
+				if err := json.Unmarshal(body, &resp); err != nil {
+					t.Fatalf("failed to unmarshal error response: %v", err)
+				}
+			},
+		},
+		{
+			name:      "repository error",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			requestBody: UpdateDrawingRequest{
+				Name: "Updated Drawing",
+				Data: map[string]interface{}{"elements": []interface{}{}},
+			},
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					return nil, errors.New("database connection failed")
+				},
+			},
+			expectedStatus: http.StatusInternalServerError,
+			validateResp: func(t *testing.T, body []byte) {
+				var resp ErrorResponse
+				if err := json.Unmarshal(body, &resp); err != nil {
+					t.Fatalf("failed to unmarshal error response: %v", err)
+				}
+				if resp.Error != "internal_error" {
+					t.Errorf("expected error type 'internal_error', got '%s'", resp.Error)
+				}
+			},
+		},
+		{
+			name:      "complex update validation",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			requestBody: UpdateDrawingRequest{
+				Name: "Complex Updated Drawing",
+				Data: map[string]interface{}{
+					"elements": []interface{}{
+						map[string]interface{}{"type": "rectangle"},
+					},
+					"appState": map[string]interface{}{"zoom": 1.5},
+					"files":    map[string]interface{}{},
+				},
+			},
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					d, _ := drawing.NewDrawing("Original", map[string]interface{}{"elements": []interface{}{}})
+					return d, nil
+				},
+				updateFunc: func(ctx context.Context, d *drawing.Drawing) error {
+					return nil
+				},
+			},
+			expectedStatus: http.StatusOK,
+			validateResp: func(t *testing.T, body []byte) {
+				var resp DrawingResponse
+				if err := json.Unmarshal(body, &resp); err != nil {
+					t.Fatalf("failed to unmarshal response: %v", err)
+				}
+				if resp.Name != "Complex Updated Drawing" {
+					t.Errorf("expected name 'Complex Updated Drawing', got '%s'", resp.Name)
+				}
+				elements, ok := resp.Data["elements"].([]interface{})
+				if !ok || len(elements) != 1 {
+					t.Error("expected elements array with 1 item")
+				}
+			},
+		},
+		{
+			name:      "verify response format",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			requestBody: UpdateDrawingRequest{
+				Name: "Updated Drawing",
+				Data: map[string]interface{}{
+					"elements": []interface{}{},
+					"appState": map[string]interface{}{},
+				},
+			},
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					d, _ := drawing.NewDrawing("Original", map[string]interface{}{"elements": []interface{}{}})
+					return d, nil
+				},
+				updateFunc: func(ctx context.Context, d *drawing.Drawing) error {
+					return nil
+				},
+			},
+			expectedStatus: http.StatusOK,
+			validateResp: func(t *testing.T, body []byte) {
+				var resp DrawingResponse
+				if err := json.Unmarshal(body, &resp); err != nil {
+					t.Fatalf("failed to unmarshal response: %v", err)
+				}
+				if resp.ID == "" {
+					t.Error("expected non-empty id")
+				}
+				if resp.Name == "" {
+					t.Error("expected non-empty name")
+				}
+				if resp.Data == nil {
+					t.Error("expected non-nil data")
+				}
+				if resp.CreatedAt == "" {
+					t.Error("expected non-empty created_at")
+				}
+				if resp.UpdatedAt == "" {
+					t.Error("expected non-empty updated_at")
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			service := drawingapp.NewService(tt.mockRepo, logger)
+			handler := NewDrawingHandler(service, logger)
+
+			var body []byte
+			var err error
+			if tt.requestBody != nil {
+				body, err = json.Marshal(tt.requestBody)
+				if err != nil {
+					t.Fatalf("failed to marshal request body: %v", err)
+				}
+			}
+
+			req := httptest.NewRequest(http.MethodPut, "/drawings/"+tt.drawingID, bytes.NewBuffer(body))
+			req.Header.Set("Content-Type", "application/json")
+			req.SetPathValue("id", tt.drawingID)
+			w := httptest.NewRecorder()
+
+			handler.UpdateDrawing(w, req)
+
+			if w.Code != tt.expectedStatus {
+				t.Errorf("expected status %d, got %d", tt.expectedStatus, w.Code)
+			}
+
+			if tt.validateResp != nil {
+				tt.validateResp(t, w.Body.Bytes())
+			}
+		})
+	}
+}

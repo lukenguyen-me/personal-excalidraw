@@ -105,3 +105,38 @@ func (s *Service) ListDrawings(ctx context.Context, input ListDrawingsInput) (*D
 		Offset:   input.Offset,
 	}, nil
 }
+
+// UpdateDrawing updates an existing drawing
+func (s *Service) UpdateDrawing(ctx context.Context, id string, input UpdateDrawingInput) (*DrawingOutput, error) {
+	s.logger.Info("updating drawing", "id", id)
+
+	// Parse UUID from string
+	drawingID, err := uuid.Parse(id)
+	if err != nil {
+		s.logger.Error("invalid drawing ID format", "id", id, "error", err)
+		return nil, fmt.Errorf("invalid drawing ID: %w", err)
+	}
+
+	// Retrieve from repository
+	d, err := s.repo.FindByID(ctx, drawingID)
+	if err != nil {
+		s.logger.Error("failed to get drawing", "id", drawingID, "error", err)
+		return nil, err
+	}
+
+	// Update the domain entity
+	if err := d.Update(input.Name, input.Data); err != nil {
+		s.logger.Error("failed to update drawing domain object", "error", err)
+		return nil, fmt.Errorf("failed to update drawing: %w", err)
+	}
+
+	// Persist to repository
+	if err := s.repo.Update(ctx, d); err != nil {
+		s.logger.Error("failed to persist updated drawing", "error", err)
+		return nil, fmt.Errorf("failed to save drawing: %w", err)
+	}
+
+	s.logger.Info("drawing updated successfully", "id", drawingID)
+
+	return ToOutput(d), nil
+}

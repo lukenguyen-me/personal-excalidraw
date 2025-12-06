@@ -28,6 +28,12 @@ type CreateDrawingRequest struct {
 	Data map[string]interface{} `json:"data"`
 }
 
+// UpdateDrawingRequest represents the HTTP request for updating a drawing
+type UpdateDrawingRequest struct {
+	Name string                 `json:"name"`
+	Data map[string]interface{} `json:"data"`
+}
+
 // DrawingResponse represents the HTTP response for a drawing
 type DrawingResponse struct {
 	ID        string                 `json:"id"`
@@ -171,6 +177,59 @@ func (h *DrawingHandler) ListDrawings(w http.ResponseWriter, r *http.Request) {
 			CreatedAt: d.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 			UpdatedAt: d.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		}
+	}
+
+	respondJSON(w, http.StatusOK, response)
+}
+
+// UpdateDrawing handles PUT /api/drawings/{id}
+func (h *DrawingHandler) UpdateDrawing(w http.ResponseWriter, r *http.Request) {
+	h.logger.Info("handling update drawing request")
+
+	// Extract ID from path
+	id := r.PathValue("id")
+	if id == "" {
+		h.logger.Error("missing drawing ID in path")
+		response := ErrorResponse{
+			Error:   "invalid_request",
+			Message: "missing drawing ID",
+		}
+		respondJSON(w, http.StatusBadRequest, response)
+		return
+	}
+
+	// Parse request body
+	var req UpdateDrawingRequest
+	if err := parseJSON(r, &req); err != nil {
+		respondError(w, err, h.logger)
+		return
+	}
+
+	// Validate request
+	if err := validateUpdateDrawingRequest(&req); err != nil {
+		respondError(w, err, h.logger)
+		return
+	}
+
+	// Call service
+	input := drawingapp.UpdateDrawingInput{
+		Name: req.Name,
+		Data: req.Data,
+	}
+
+	output, err := h.service.UpdateDrawing(r.Context(), id, input)
+	if err != nil {
+		respondError(w, err, h.logger)
+		return
+	}
+
+	// Convert to HTTP response
+	response := DrawingResponse{
+		ID:        output.ID.String(),
+		Name:      output.Name,
+		Data:      output.Data,
+		CreatedAt: output.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt: output.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 
 	respondJSON(w, http.StatusOK, response)
