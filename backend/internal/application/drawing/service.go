@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/google/uuid"
 	"github.com/personal-excalidraw/backend/internal/domain/drawing"
 )
 
@@ -40,6 +41,29 @@ func (s *Service) CreateDrawing(ctx context.Context, input CreateDrawingInput) (
 	}
 
 	s.logger.Info("drawing created successfully", "id", d.ID())
+
+	return ToOutput(d), nil
+}
+
+// GetDrawing retrieves a single drawing by ID
+func (s *Service) GetDrawing(ctx context.Context, id string) (*DrawingOutput, error) {
+	s.logger.Info("getting drawing", "id", id)
+
+	// Parse UUID from string
+	drawingID, err := uuid.Parse(id)
+	if err != nil {
+		s.logger.Error("invalid drawing ID format", "id", id, "error", err)
+		return nil, fmt.Errorf("invalid drawing ID: %w", err)
+	}
+
+	// Retrieve from repository
+	d, err := s.repo.FindByID(ctx, drawingID)
+	if err != nil {
+		s.logger.Error("failed to get drawing", "id", drawingID, "error", err)
+		return nil, err
+	}
+
+	s.logger.Info("drawing retrieved successfully", "id", drawingID)
 
 	return ToOutput(d), nil
 }

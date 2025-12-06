@@ -86,6 +86,41 @@ func (h *DrawingHandler) CreateDrawing(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusCreated, response)
 }
 
+// GetDrawing handles GET /api/drawings/{id}
+func (h *DrawingHandler) GetDrawing(w http.ResponseWriter, r *http.Request) {
+	h.logger.Info("handling get drawing request")
+
+	// Extract ID from path
+	id := r.PathValue("id")
+	if id == "" {
+		h.logger.Error("missing drawing ID in path")
+		response := ErrorResponse{
+			Error:   "invalid_request",
+			Message: "missing drawing ID",
+		}
+		respondJSON(w, http.StatusBadRequest, response)
+		return
+	}
+
+	// Call service
+	output, err := h.service.GetDrawing(r.Context(), id)
+	if err != nil {
+		respondError(w, err, h.logger)
+		return
+	}
+
+	// Convert to HTTP response
+	response := DrawingResponse{
+		ID:        output.ID.String(),
+		Name:      output.Name,
+		Data:      output.Data,
+		CreatedAt: output.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt: output.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+	}
+
+	respondJSON(w, http.StatusOK, response)
+}
+
 // ListDrawings handles GET /api/drawings
 func (h *DrawingHandler) ListDrawings(w http.ResponseWriter, r *http.Request) {
 	h.logger.Info("handling list drawings request")

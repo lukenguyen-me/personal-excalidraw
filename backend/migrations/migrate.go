@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"embed"
 	"flag"
 	"fmt"
 	"log"
@@ -10,13 +9,10 @@ import (
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
-	"github.com/golang-migrate/migrate/v4/source/iofs"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
-
-//go:embed *.sql
-var migrationsFS embed.FS
 
 func main() {
 	// Define flags
@@ -64,14 +60,13 @@ func main() {
 		log.Fatal("Failed to create postgres driver:", err)
 	}
 
-	// Create source from embedded files
-	source, err := iofs.New(migrationsFS, ".")
-	if err != nil {
-		log.Fatal("Failed to create migration source:", err)
-	}
-
-	// Create migrate instance
-	m, err := migrate.NewWithInstance("iofs", source, "postgres", driver)
+	// Create migrate instance using file source
+	// Use current directory (migrations/) as the source
+	m, err := migrate.NewWithDatabaseInstance(
+		"file://.",
+		dbName,
+		driver,
+	)
 	if err != nil {
 		log.Fatal("Failed to create migrate instance:", err)
 	}

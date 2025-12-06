@@ -3,20 +3,27 @@ package postgres
 const (
 	// queryCreateDrawing inserts a new drawing into the database
 	queryCreateDrawing = `
-		INSERT INTO drawings (id, name, data, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO drawings (id, slug, name, data, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6)
 	`
 
 	// queryFindDrawingByID retrieves a drawing by its ID
 	queryFindDrawingByID = `
-		SELECT id, name, data, created_at, updated_at
+		SELECT id, slug, name, data, created_at, updated_at
 		FROM drawings
 		WHERE id = $1
 	`
 
+	// queryFindDrawingBySlug retrieves a drawing by its slug
+	queryFindDrawingBySlug = `
+		SELECT id, slug, name, data, created_at, updated_at
+		FROM drawings
+		WHERE slug = $1
+	`
+
 	// queryFindAllDrawings retrieves all drawings with pagination
 	queryFindAllDrawings = `
-		SELECT id, name, data, created_at, updated_at
+		SELECT id, slug, name, data, created_at, updated_at
 		FROM drawings
 		ORDER BY created_at DESC
 		LIMIT $1 OFFSET $2

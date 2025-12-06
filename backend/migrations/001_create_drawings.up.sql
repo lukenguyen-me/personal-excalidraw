@@ -1,4 +1,3 @@
--- +migrate Up
 -- Create UUID extension if not exists
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
@@ -13,7 +12,3 @@ CREATE TABLE drawings (
 
 -- Create index on created_at for efficient sorting when listing drawings
 CREATE INDEX idx_drawings_created_at ON drawings(created_at DESC);
-
--- +migrate Down
--- Drop the drawings table
-DROP TABLE IF EXISTS drawings;

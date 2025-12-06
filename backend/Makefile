@@ -1,4 +1,4 @@
-.PHONY: help dev build test docker-up docker-down lint fmt tidy
+.PHONY: help dev build test docker-up docker-down lint fmt tidy migrate-up migrate-down migrate-status migrate-force
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -45,3 +45,15 @@ install-tools: ## Install development tools
 clean: ## Clean build artifacts
 	rm -rf bin/
 	rm -f coverage.out
+
+migrate-up: ## Run all pending migrations inside Docker
+	docker exec personal-excalidraw-backend sh -c "cd migrations && go run migrate.go -up"
+
+migrate-down: ## Rollback all migrations inside Docker
+	docker exec personal-excalidraw-backend sh -c "cd migrations && go run migrate.go -down"
+
+migrate-status: ## Check current migration version inside Docker
+	docker exec personal-excalidraw-backend sh -c "cd migrations && go run migrate.go"
+
+migrate-force: ## Force migration version (usage: make migrate-force VERSION=1)
+	docker exec personal-excalidraw-backend sh -c "cd migrations && go run migrate.go -force $(VERSION)"

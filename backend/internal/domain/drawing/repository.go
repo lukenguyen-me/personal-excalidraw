@@ -14,6 +14,9 @@ type Repository interface {
 	// FindByID retrieves a drawing by ID
 	FindByID(ctx context.Context, id uuid.UUID) (*Drawing, error)
 
+	// FindBySlug retrieves a drawing by slug
+	FindBySlug(ctx context.Context, slug string) (*Drawing, error)
+
 	// FindAll retrieves all drawings with pagination
 	FindAll(ctx context.Context, limit, offset int) ([]*Drawing, error)
 

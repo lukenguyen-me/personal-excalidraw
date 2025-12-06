@@ -24,6 +24,7 @@ func NewRouter(
 
 	// Drawing API endpoints (nginx strips /api prefix)
 	mux.HandleFunc("POST /drawings", drawingHandler.CreateDrawing)
+	mux.HandleFunc("GET /drawings/{id}", drawingHandler.GetDrawing)
 	mux.HandleFunc("GET /drawings", drawingHandler.ListDrawings)
 
 	// Apply middleware stack (in reverse order - outermost first)

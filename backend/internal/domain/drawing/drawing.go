@@ -15,6 +15,7 @@ const (
 // Drawing represents the drawing aggregate root
 type Drawing struct {
 	id        uuid.UUID
+	slug      string
 	name      string
 	data      DrawingData
 	createdAt time.Time
@@ -25,6 +26,7 @@ type Drawing struct {
 func NewDrawing(name string, data DrawingData) (*Drawing, error) {
 	d := &Drawing{
 		id:        uuid.New(),
+		slug:      "", // Slug will be set by the service layer
 		name:      name,
 		data:      data,
 		createdAt: time.Now().UTC(),
@@ -38,10 +40,16 @@ func NewDrawing(name string, data DrawingData) (*Drawing, error) {
 	return d, nil
 }
 
+// SetSlug sets the slug for the drawing (to be called by service layer)
+func (d *Drawing) SetSlug(slug string) {
+	d.slug = slug
+}
+
 // Reconstitute creates a drawing from persisted data (for repository use)
-func Reconstitute(id uuid.UUID, name string, data DrawingData, createdAt, updatedAt time.Time) (*Drawing, error) {
+func Reconstitute(id uuid.UUID, slug, name string, data DrawingData, createdAt, updatedAt time.Time) (*Drawing, error) {
 	d := &Drawing{
 		id:        id,
+		slug:      slug,
 		name:      name,
 		data:      data,
 		createdAt: createdAt,
@@ -97,6 +105,11 @@ func (d *Drawing) validateName() error {
 // ID returns the drawing ID
 func (d *Drawing) ID() uuid.UUID {
 	return d.id
+}
+
+// Slug returns the drawing slug
+func (d *Drawing) Slug() string {
+	return d.slug
 }
 
 // Name returns the drawing name

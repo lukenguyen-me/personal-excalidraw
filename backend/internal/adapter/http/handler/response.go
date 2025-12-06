@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/personal-excalidraw/backend/internal/domain/drawing"
 )
@@ -96,6 +97,8 @@ func mapErrorToHTTP(err error) (status int, errorType, message string) {
 		return http.StatusBadRequest, "empty_name", "Drawing name cannot be empty"
 	case errors.Is(err, drawing.ErrNameTooLong):
 		return http.StatusBadRequest, "name_too_long", "Drawing name exceeds maximum length"
+	case err != nil && strings.Contains(err.Error(), "invalid drawing ID"):
+		return http.StatusBadRequest, "invalid_request", err.Error()
 	default:
 		return http.StatusInternalServerError, "internal_error", "Internal server error"
 	}

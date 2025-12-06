@@ -38,6 +38,7 @@ func (r *DrawingRepository) Create(ctx context.Context, d *drawing.Drawing) erro
 		ctx,
 		queryCreateDrawing,
 		d.ID(),
+		d.Slug(),
 		d.Name(),
 		dataJSON,
 		d.CreatedAt(),
@@ -54,6 +55,7 @@ func (r *DrawingRepository) Create(ctx context.Context, d *drawing.Drawing) erro
 func (r *DrawingRepository) FindByID(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
 	var (
 		drawingID uuid.UUID
+		slug      string
 		name      string
 		dataJSON  []byte
 		createdAt, updatedAt time.Time
@@ -62,6 +64,7 @@ func (r *DrawingRepository) FindByID(ctx context.Context, id uuid.UUID) (*drawin
 	// Execute select query
 	err := r.pool.QueryRow(ctx, queryFindDrawingByID, id).Scan(
 		&drawingID,
+		&slug,
 		&name,
 		&dataJSON,
 		&createdAt,
@@ -81,7 +84,48 @@ func (r *DrawingRepository) FindByID(ctx context.Context, id uuid.UUID) (*drawin
 	}
 
 	// Reconstitute the drawing entity
-	d, err := drawing.Reconstitute(drawingID, name, data, createdAt, updatedAt)
+	d, err := drawing.Reconstitute(drawingID, slug, name, data, createdAt, updatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to reconstitute drawing: %w", err)
+	}
+
+	return d, nil
+}
+
+// FindBySlug retrieves a drawing by its slug
+func (r *DrawingRepository) FindBySlug(ctx context.Context, slugParam string) (*drawing.Drawing, error) {
+	var (
+		drawingID uuid.UUID
+		slug      string
+		name      string
+		dataJSON  []byte
+		createdAt, updatedAt time.Time
+	)
+
+	// Execute select query
+	err := r.pool.QueryRow(ctx, queryFindDrawingBySlug, slugParam).Scan(
+		&drawingID,
+		&slug,
+		&name,
+		&dataJSON,
+		&createdAt,
+		&updatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, drawing.ErrDrawingNotFound
+		}
+		return nil, fmt.Errorf("failed to find drawing by slug: %w", err)
+	}
+
+	// Parse drawing data from JSON
+	data, err := drawing.FromJSON(dataJSON)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal drawing data: %w", err)
+	}
+
+	// Reconstitute the drawing entity
+	d, err := drawing.Reconstitute(drawingID, slug, name, data, createdAt, updatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to reconstitute drawing: %w", err)
 	}
@@ -103,12 +147,13 @@ func (r *DrawingRepository) FindAll(ctx context.Context, limit, offset int) ([]*
 	for rows.Next() {
 		var (
 			drawingID uuid.UUID
+			slug      string
 			name      string
 			dataJSON  []byte
 			createdAt, updatedAt time.Time
 		)
 
-		if err := rows.Scan(&drawingID, &name, &dataJSON, &createdAt, &updatedAt); err != nil {
+		if err := rows.Scan(&drawingID, &slug, &name, &dataJSON, &createdAt, &updatedAt); err != nil {
 			return nil, fmt.Errorf("failed to scan drawing row: %w", err)
 		}
 
@@ -119,7 +164,7 @@ func (r *DrawingRepository) FindAll(ctx context.Context, limit, offset int) ([]*
 		}
 
 		// Reconstitute the drawing entity
-		d, err := drawing.Reconstitute(drawingID, name, data, createdAt, updatedAt)
+		d, err := drawing.Reconstitute(drawingID, slug, name, data, createdAt, updatedAt)
 		if err != nil {
 			return nil, fmt.Errorf("failed to reconstitute drawing: %w", err)
 		}

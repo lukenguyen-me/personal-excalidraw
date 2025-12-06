@@ -14,12 +14,13 @@ import (
 
 // mockDrawingRepository is a mock implementation of the drawing repository
 type mockDrawingRepository struct {
-	createFunc   func(ctx context.Context, d *drawing.Drawing) error
-	findAllFunc  func(ctx context.Context, limit, offset int) ([]*drawing.Drawing, error)
-	countFunc    func(ctx context.Context) (int64, error)
-	findByIDFunc func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error)
-	updateFunc   func(ctx context.Context, d *drawing.Drawing) error
-	deleteFunc   func(ctx context.Context, id uuid.UUID) error
+	createFunc     func(ctx context.Context, d *drawing.Drawing) error
+	findAllFunc    func(ctx context.Context, limit, offset int) ([]*drawing.Drawing, error)
+	countFunc      func(ctx context.Context) (int64, error)
+	findByIDFunc   func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error)
+	findBySlugFunc func(ctx context.Context, slug string) (*drawing.Drawing, error)
+	updateFunc     func(ctx context.Context, d *drawing.Drawing) error
+	deleteFunc     func(ctx context.Context, id uuid.UUID) error
 }
 
 func (m *mockDrawingRepository) Create(ctx context.Context, d *drawing.Drawing) error {
@@ -46,6 +47,13 @@ func (m *mockDrawingRepository) Count(ctx context.Context) (int64, error) {
 func (m *mockDrawingRepository) FindByID(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
 	if m.findByIDFunc != nil {
 		return m.findByIDFunc(ctx, id)
+	}
+	return nil, errors.New("not implemented")
+}
+
+func (m *mockDrawingRepository) FindBySlug(ctx context.Context, slug string) (*drawing.Drawing, error) {
+	if m.findBySlugFunc != nil {
+		return m.findBySlugFunc(ctx, slug)
 	}
 	return nil, errors.New("not implemented")
 }
@@ -441,6 +449,119 @@ func TestListDrawings(t *testing.T) {
 			ctx := context.Background()
 
 			output, err := service.ListDrawings(ctx, tt.input)
+
+			if tt.expectError && err == nil {
+				t.Error("expected error but got none")
+			}
+			if !tt.expectError && err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+
+			if tt.validateOut != nil {
+				tt.validateOut(t, output)
+			}
+		})
+	}
+}
+
+func TestGetDrawing(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
+
+	tests := []struct {
+		name        string
+		drawingID   string
+		mockRepo    *mockDrawingRepository
+		expectError bool
+		validateOut func(t *testing.T, out *DrawingOutput)
+	}{
+		{
+			name:      "successful get drawing",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					d, _ := drawing.NewDrawing("Test Drawing", map[string]interface{}{
+						"elements": []interface{}{},
+						"appState": map[string]interface{}{},
+					})
+					return d, nil
+				},
+			},
+			expectError: false,
+			validateOut: func(t *testing.T, out *DrawingOutput) {
+				if out == nil {
+					t.Fatal("expected non-nil output")
+				}
+				if out.Name != "Test Drawing" {
+					t.Errorf("expected name 'Test Drawing', got '%s'", out.Name)
+				}
+				if out.ID == uuid.Nil {
+					t.Error("expected non-nil UUID")
+				}
+				if out.Data == nil {
+					t.Error("expected non-nil data")
+				}
+			},
+		},
+		{
+			name:      "drawing not found",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					return nil, drawing.ErrDrawingNotFound
+				},
+			},
+			expectError: true,
+			validateOut: func(t *testing.T, out *DrawingOutput) {
+				if out != nil {
+					t.Error("expected nil output on error")
+				}
+			},
+		},
+		{
+			name:        "invalid UUID format",
+			drawingID:   "invalid-uuid",
+			mockRepo:    &mockDrawingRepository{},
+			expectError: true,
+			validateOut: func(t *testing.T, out *DrawingOutput) {
+				if out != nil {
+					t.Error("expected nil output on error")
+				}
+			},
+		},
+		{
+			name:      "repository error",
+			drawingID: "123e4567-e89b-12d3-a456-426614174000",
+			mockRepo: &mockDrawingRepository{
+				findByIDFunc: func(ctx context.Context, id uuid.UUID) (*drawing.Drawing, error) {
+					return nil, errors.New("database connection failed")
+				},
+			},
+			expectError: true,
+			validateOut: func(t *testing.T, out *DrawingOutput) {
+				if out != nil {
+					t.Error("expected nil output on error")
+				}
+			},
+		},
+		{
+			name:        "empty UUID string",
+			drawingID:   "",
+			mockRepo:    &mockDrawingRepository{},
+			expectError: true,
+			validateOut: func(t *testing.T, out *DrawingOutput) {
+				if out != nil {
+					t.Error("expected nil output on error")
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			service := NewService(tt.mockRepo, logger)
+			ctx := context.Background()
+
+			output, err := service.GetDrawing(ctx, tt.drawingID)
 
 			if tt.expectError && err == nil {
 				t.Error("expected error but got none")
