@@ -13,14 +13,13 @@ This document outlines the development roadmap for Personal Excalidraw.
 - [x] Svelte stores for state management
 - [x] Home page with drawings list
 - [x] Drawing editor with dynamic routing
-- [x] Wireframe theme configuration
 - [x] Mock data with 8 sample drawings
 
 **Outcome**: Functional frontend with mock data and basic navigation.
 
-## Phase 2: Local Storage & Real Data 🚧
+## Phase 2: Local Storage & Real Data ✅
 
-**Status**: In Progress
+**Status**: Complete
 
 ### Completed
 
@@ -31,151 +30,67 @@ This document outlines the development roadmap for Personal Excalidraw.
 - [x] ID type abstraction for consistent type safety
 - [x] Drawing metadata timestamp synchronization
 - [x] Data validation and error handling (corrupted data, quota exceeded)
-- [x] Add drawing name editing
+- [x] Add drawing name editing with inline editing UI
+- [x] Replace all mock data with real localStorage-backed data
+- [x] Implement full CRUD operations for drawings
 
-### Goals
+**Outcome**: Fully functional local-first application with complete drawing management capabilities.
 
-- Replace all mock data with real localStorage-backed data
-- Implement full CRUD operations for drawings
-- Add data import/export capabilities
-- Ensure data persistence and recovery
+## Phase 3: Backend Integration ✅
 
-## Phase 3: Backend Integration
+**Status**: Complete
 
-**Status**: Not Started
+### Backend Development ✅
 
-### Backend Development
+- [x] Set up Go project structure with Clean Architecture
+- [x] Implement PostgreSQL database schema with migrations
+- [x] Create RESTful API endpoints:
+  - [x] `GET /api/drawings` - List all drawings
+  - [x] `GET /api/drawings/:id` - Get specific drawing
+  - [x] `POST /api/drawings` - Create new drawing
+  - [x] `PUT /api/drawings/:id` - Update drawing (with partial updates support)
+  - [x] `DELETE /api/drawings/:id` - Delete drawing
+- [x] Add slug-based URL support for SEO-friendly URLs
+- [x] Database migrations system with reversible migrations
+- [x] Comprehensive error handling and validation
+- [x] Request/Response DTOs with proper validation
+- [x] Comprehensive test coverage (unit + integration tests)
 
-- [ ] Set up Go project structure
-- [ ] Implement PostgreSQL database schema
-- [ ] Create RESTful API endpoints:
-  - [ ] `GET /api/drawings` - List all drawings
-  - [ ] `GET /api/drawings/:id` - Get specific drawing
-  - [ ] `POST /api/drawings` - Create new drawing
-  - [ ] `PUT /api/drawings/:id` - Update drawing
-  - [ ] `DELETE /api/drawings/:id` - Delete drawing
-- [ ] Add database migrations
-- [ ] Implement error handling and validation
+### Frontend Integration ✅
 
-### Frontend Integration
+- [x] Create API client service with TypeScript types
+- [x] Replace localStorage calls with API calls
+- [x] Add TanStack Query for data fetching and caching
+- [x] Implement loading states and error handling
+- [x] Real-time data synchronization with optimistic updates
+- [x] Inline name editing with API integration
 
-- [ ] Create API client service
-- [ ] Replace localStorage calls with API calls
-- [ ] Add loading states and error handling
-- [ ] Implement data synchronization
-
-### Authentication & Security
-
-- [ ] User authentication system
-- [ ] JWT token management
-- [ ] Protected API routes
-- [ ] User session handling
-
-### Cloud Synchronization
-
-- [ ] Real-time sync between devices
-- [ ] Conflict resolution strategy
-- [ ] Offline mode support
-- [ ] Multi-user support
+**Outcome**: Full-stack application with backend API, database persistence, and seamless frontend-backend integration. As for personel purpose, this will not include authentication feature.
 
 ### Goals
 
 - Transition from local-only to cloud-backed storage
 - Enable cross-device access
-- Prepare for multi-user features
 
-## Phase 4: Enhanced Features
+## Phase 4: Production Ready
 
-**Status**: Not Started
-
-### Search & Organization
-
-- [ ] Search and filter drawings by name
-- [ ] Advanced search (by date, tags, content)
-- [ ] Sorting options (name, created date, updated date)
-- [ ] Pagination for large drawing lists
-- [ ] Bulk operations (delete, export multiple)
-
-### Visual Improvements
-
-- [ ] Drawing thumbnails/previews in list view
-- [ ] Grid view option (alternative to table)
-- [ ] Preview modal on hover
-- [ ] Canvas thumbnails generation
-
-### Categorization
-
-- [ ] Tags and categories system
-- [ ] Color-coded labels
-- [ ] Custom folders/collections
-- [ ] Favorites/starred drawings
-
-### Collaboration
-
-- [ ] Sharing capabilities (public links)
-- [ ] Collaborative editing (real-time)
-- [ ] Comments and annotations
-- [ ] Version history
-- [ ] Access control (view/edit permissions)
-
-### Export Options
-
-- [ ] Batch export (multiple drawings)
-- [ ] Multiple format support (PNG, SVG, PDF)
-- [ ] Custom export settings (resolution, background)
-- [ ] Automated backups
+Focuses on making the application stable, production-ready, and ready for daily use:
 
 ### Goals
 
-- Enhance user experience with advanced features
-- Support collaboration workflows
-- Provide professional export options
+- Code quality improvements (remove redundant code, add utilities)
+- Production deployment setup (Docker, environment config)
+- Error handling and user feedback improvements
+- Documentation for users and deployment
+- Basic security hardening with Access Key.
 
 ## Future Considerations
 
-### Performance
-
-- [ ] Lazy loading for large drawing lists
-- [ ] Canvas rendering optimization
-- [ ] Image compression for embedded files
-- [ ] Cache management
-
-### Mobile Support
-
-- [ ] Responsive mobile UI
-- [ ] Touch gestures optimization
-- [ ] Mobile-friendly toolbar
-- [ ] Progressive Web App (PWA)
-
-### Integrations
-
-- [ ] Import from other drawing tools
-- [ ] Export to Figma, Miro, etc.
-- [ ] Markdown embedding
-- [ ] API for third-party integrations
-
-### Analytics
-
-- [ ] Usage statistics
-- [ ] Drawing metrics
-- [ ] Performance monitoring
-- [ ] Error tracking
-
 ## Milestones
 
-| Phase                            | Target      | Status      |
-| -------------------------------- | ----------- | ----------- |
-| Phase 1: Frontend Infrastructure | ✅ Complete | Done        |
-| Phase 2: Local Storage           | 🚧 ~75%     | In Progress |
-| Phase 3: Backend Integration     | 📅 Planned  | Not Started |
-| Phase 4: Enhanced Features       | 📅 Planned  | Not Started |
-
-## Current Priority
-
-**Focus**: Complete Phase 2 by finishing:
-
-1. Drawing name editing functionality
-2. Export/Import capabilities
-3. Drawing history persistence
-
-These features will provide a solid foundation before moving to backend integration.
+| Phase                            | Target         | Status |
+| -------------------------------- | -------------- | ------ |
+| Phase 1: Frontend Infrastructure | ✅ Complete    | Done   |
+| Phase 2: Local Storage           | ✅ Complete    | Done   |
+| Phase 3: Backend Integration     | ✅ Complete    | Done   |
+| Phase 4: Production Ready        | 🚧 In Progress | Next   |
