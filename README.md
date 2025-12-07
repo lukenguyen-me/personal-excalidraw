@@ -82,15 +82,45 @@ This starts:
 - Backend server on `http://localhost:8080`
 - Frontend dev server on `http://localhost:5173`
 
-### Building for Production
+### Production Deployment
+
+For production deployment to your VPS or server, see the comprehensive [Deployment Guide](DEPLOYMENT.md).
+
+**Quick production setup:**
 
 ```bash
-docker build -t personal-excalidraw:latest .
-docker run -p 8080:8080 \
-  -e ACCESS_KEY=your-secret-key-here \
-  -e AUTH_ENABLED=true \
-  personal-excalidraw:latest
+# 1. Clone the repository
+git clone https://github.com/yourusername/personal-excalidraw.git
+cd personal-excalidraw
+
+# 2. Interactive configuration (no file editing needed!)
+./deploy.sh config
+
+# 3. Start the application
+./deploy.sh start
 ```
+
+Your application will be running at `http://your-server-ip:8080`
+
+**Common deployment commands:**
+
+```bash
+./deploy.sh config     # Interactive setup (first time)
+./deploy.sh start      # Start the application
+./deploy.sh stop       # Stop the application
+./deploy.sh restart    # Restart the application
+./deploy.sh logs -f    # Follow logs in real-time
+./deploy.sh upgrade    # Pull updates and restart
+./deploy.sh backup     # Create database backup
+./deploy.sh help       # Show all commands
+```
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for:
+- Complete setup instructions
+- SSL/HTTPS configuration with Nginx
+- Backup and maintenance procedures
+- Troubleshooting guide
+- Security best practices
 
 ## Authentication
 
@@ -124,6 +154,7 @@ ACCESS_KEY=your-secret-key-here
 
 ## Documentation
 
+- [DEPLOYMENT.md](DEPLOYMENT.md) - **Production deployment guide for VPS**
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Technical architecture, tech stack, and implementation details
 - [PLAN.md](PLAN.md) - Development roadmap and feature planning
 
