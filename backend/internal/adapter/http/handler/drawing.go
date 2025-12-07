@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	drawingapp "github.com/personal-excalidraw/backend/internal/application/drawing"
+	"github.com/personal-excalidraw/backend/internal/adapter/http/util"
 )
 
 // DrawingHandler handles drawing HTTP requests
@@ -89,7 +90,7 @@ func (h *DrawingHandler) CreateDrawing(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt: output.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 
-	respondJSON(w, http.StatusCreated, response)
+	util.RespondJSON(w, http.StatusCreated, response)
 }
 
 // GetDrawing handles GET /api/drawings/{id}
@@ -104,7 +105,7 @@ func (h *DrawingHandler) GetDrawing(w http.ResponseWriter, r *http.Request) {
 			Error:   "invalid_request",
 			Message: "missing drawing ID",
 		}
-		respondJSON(w, http.StatusBadRequest, response)
+		util.RespondJSON(w, http.StatusBadRequest, response)
 		return
 	}
 
@@ -124,7 +125,7 @@ func (h *DrawingHandler) GetDrawing(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt: output.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 
-	respondJSON(w, http.StatusOK, response)
+	util.RespondJSON(w, http.StatusOK, response)
 }
 
 // ListDrawings handles GET /api/drawings
@@ -179,7 +180,7 @@ func (h *DrawingHandler) ListDrawings(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	respondJSON(w, http.StatusOK, response)
+	util.RespondJSON(w, http.StatusOK, response)
 }
 
 // UpdateDrawing handles PUT /api/drawings/{id}
@@ -194,7 +195,7 @@ func (h *DrawingHandler) UpdateDrawing(w http.ResponseWriter, r *http.Request) {
 			Error:   "invalid_request",
 			Message: "missing drawing ID",
 		}
-		respondJSON(w, http.StatusBadRequest, response)
+		util.RespondJSON(w, http.StatusBadRequest, response)
 		return
 	}
 
@@ -232,7 +233,7 @@ func (h *DrawingHandler) UpdateDrawing(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt: output.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 
-	respondJSON(w, http.StatusOK, response)
+	util.RespondJSON(w, http.StatusOK, response)
 }
 
 // DeleteDrawing handles DELETE /api/drawings/{id}
@@ -247,7 +248,7 @@ func (h *DrawingHandler) DeleteDrawing(w http.ResponseWriter, r *http.Request) {
 			Error:   "invalid_request",
 			Message: "missing drawing ID",
 		}
-		respondJSON(w, http.StatusBadRequest, response)
+		util.RespondJSON(w, http.StatusBadRequest, response)
 		return
 	}
 

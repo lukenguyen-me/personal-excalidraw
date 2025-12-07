@@ -1,12 +1,12 @@
 package handler
 
 import (
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
 
+	"github.com/personal-excalidraw/backend/internal/adapter/http/util"
 	"github.com/personal-excalidraw/backend/internal/domain/drawing"
 )
 
@@ -24,24 +24,11 @@ func parseJSON(r *http.Request, v interface{}) error {
 	}
 	defer r.Body.Close()
 
-	if err := json.NewDecoder(r.Body).Decode(v); err != nil {
+	if err := util.DecodeJSON(r.Body, v); err != nil {
 		return errors.New("invalid JSON format")
 	}
 
 	return nil
-}
-
-// respondJSON sends a JSON response
-func respondJSON(w http.ResponseWriter, status int, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-
-	if data != nil {
-		if err := json.NewEncoder(w).Encode(data); err != nil {
-			// Log error but can't change status code at this point
-			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		}
-	}
 }
 
 // respondError sends an error response with appropriate status code
@@ -55,7 +42,7 @@ func respondError(w http.ResponseWriter, err error, logger *slog.Logger) {
 		Message: message,
 	}
 
-	respondJSON(w, status, response)
+	util.RespondJSON(w, status, response)
 }
 
 // respondValidationError sends a validation error response
@@ -71,7 +58,7 @@ func respondValidationError(w http.ResponseWriter, validationErrors []Validation
 		Details: details,
 	}
 
-	respondJSON(w, http.StatusBadRequest, response)
+	util.RespondJSON(w, http.StatusBadRequest, response)
 }
 
 // respondNotFound sends a 404 response
@@ -81,7 +68,7 @@ func respondNotFound(w http.ResponseWriter, message string) {
 		Message: message,
 	}
 
-	respondJSON(w, http.StatusNotFound, response)
+	util.RespondJSON(w, http.StatusNotFound, response)
 }
 
 // mapErrorToHTTP maps domain errors to HTTP status codes

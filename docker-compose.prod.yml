@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: personal-excalidraw-app
+    restart: unless-stopped
+    ports:
+      - '${APP_PORT:-8080}:8080'
+    environment:
+      # Server configuration
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8080
+      - SERVER_READ_TIMEOUT=${SERVER_READ_TIMEOUT:-30}
+      - SERVER_WRITE_TIMEOUT=${SERVER_WRITE_TIMEOUT:-30}
+
+      # Database configuration
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME:-personal_excalidraw}
+      - DB_SSLMODE=${DB_SSLMODE:-disable}
+      - DB_MAX_CONNS=${DB_MAX_CONNS:-25}
+      - DB_MIN_CONNS=${DB_MIN_CONNS:-5}
+
+      # CORS configuration
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-*}
+
+      # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+
+      # Authentication
+      - AUTH_ENABLED=${AUTH_ENABLED:-true}
+      - ACCESS_KEY=${ACCESS_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:8080/health']
+      interval: 30s
+      timeout: 3s
+      start_period: 10s
+      retries: 3
+    networks:
+      - personal-excalidraw
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: personal-excalidraw-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME:-personal_excalidraw}
+      - POSTGRES_INITDB_ARGS=--encoding=UTF8 --lc-collate=C --lc-ctype=C
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER:-postgres}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - personal-excalidraw
+    # Uncomment to expose postgres port (for debugging only)
+    # ports:
+    #   - '5432:5432'
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  personal-excalidraw:
+    driver: bridge

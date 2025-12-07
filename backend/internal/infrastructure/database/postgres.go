@@ -2,11 +2,13 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/personal-excalidraw/backend/internal/infrastructure/config"
 )
 
@@ -82,4 +84,26 @@ func (db *PostgresDB) Ping(ctx context.Context) error {
 // Stats returns the current pool statistics
 func (db *PostgresDB) Stats() *pgxpool.Stat {
 	return db.Pool.Stat()
+}
+
+// GetStdlib returns a database/sql DB connection for use with migration tools
+func (db *PostgresDB) GetStdlib(cfg *config.DatabaseConfig) (*sql.DB, error) {
+	dsn := fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DBName, cfg.SSLMode,
+	)
+
+	// Use pgx driver name for database/sql
+	sqlDB, err := sql.Open("pgx", dsn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open database connection: %w", err)
+	}
+
+	// Test the connection
+	if err := sqlDB.Ping(); err != nil {
+		sqlDB.Close()
+		return nil, fmt.Errorf("failed to ping database: %w", err)
+	}
+
+	return sqlDB, nil
 }

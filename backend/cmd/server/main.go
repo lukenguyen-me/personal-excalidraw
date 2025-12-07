@@ -17,6 +17,7 @@ import (
 	"github.com/personal-excalidraw/backend/internal/infrastructure/config"
 	"github.com/personal-excalidraw/backend/internal/infrastructure/database"
 	"github.com/personal-excalidraw/backend/internal/infrastructure/logger"
+	"github.com/personal-excalidraw/backend/internal/infrastructure/migration"
 )
 
 func main() {
@@ -38,21 +39,35 @@ func main() {
 	}
 	defer db.Close()
 
-	// 4. Initialize repositories
+	// 4. Run database migrations
+	migrationRunner := migration.NewRunner(appLogger)
+	sqlDB, err := db.GetStdlib(&cfg.Database)
+	if err != nil {
+		appLogger.Error("Failed to get stdlib database connection", "error", err)
+		log.Fatalf("Migration setup failed: %v", err)
+	}
+	defer sqlDB.Close()
+
+	if err := migrationRunner.Run(sqlDB, cfg.Database.DBName); err != nil {
+		appLogger.Error("Failed to run migrations", "error", err)
+		log.Fatalf("Migration failed: %v", err)
+	}
+
+	// 5. Initialize repositories
 	drawingRepo := postgres.NewDrawingRepository(db.Pool)
 
-	// 5. Initialize application services
+	// 6. Initialize application services
 	drawingService := drawingapp.NewService(drawingRepo, appLogger)
 
-	// 6. Initialize HTTP handlers
+	// 7. Initialize HTTP handlers
 	healthHandler := handler.NewHealthHandler()
 	drawingHandler := handler.NewDrawingHandler(drawingService, appLogger)
 	authHandler := handler.NewAuthHandler()
 
-	// 7. Setup router
+	// 8. Setup router
 	router := httpAdapter.NewRouter(cfg, healthHandler, drawingHandler, authHandler, appLogger)
 
-	// 8. Create HTTP server
+	// 9. Create HTTP server
 	serverAddr := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
 	server := &http.Server{
 		Addr:         serverAddr,
@@ -61,7 +76,7 @@ func main() {
 		WriteTimeout: time.Duration(cfg.Server.WriteTimeout) * time.Second,
 	}
 
-	// 9. Start server in goroutine
+	// 10. Start server in goroutine
 	go func() {
 		appLogger.Info("Server starting",
 			"address", serverAddr,
@@ -75,7 +90,7 @@ func main() {
 		}
 	}()
 
-	// 10. Graceful shutdown
+	// 11. Graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit

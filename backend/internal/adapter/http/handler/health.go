@@ -2,6 +2,8 @@ package handler
 
 import (
 	"net/http"
+
+	"github.com/personal-excalidraw/backend/internal/adapter/http/util"
 )
 
 // HealthHandler handles health check requests
@@ -17,5 +19,5 @@ func (h *HealthHandler) Check(w http.ResponseWriter, r *http.Request) {
 	response := map[string]interface{}{
 		"status": "ok",
 	}
-	respondJSON(w, http.StatusOK, response)
+	util.RespondJSON(w, http.StatusOK, response)
 }

@@ -2,10 +2,10 @@ package middleware
 
 import (
 	"crypto/subtle"
-	"encoding/json"
 	"net/http"
 	"strings"
 
+	"github.com/personal-excalidraw/backend/internal/adapter/http/util"
 	"github.com/personal-excalidraw/backend/internal/infrastructure/config"
 )
 
@@ -30,7 +30,7 @@ func Auth(cfg *config.Config, publicPaths []string) func(http.Handler) http.Hand
 			// Extract Authorization header
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
-				respondJSON(w, http.StatusUnauthorized, map[string]string{
+				util.RespondJSON(w, http.StatusUnauthorized, map[string]string{
 					"error":   "Unauthorized",
 					"message": "Access key required",
 					"code":    "AUTH_REQUIRED",
@@ -41,7 +41,7 @@ func Auth(cfg *config.Config, publicPaths []string) func(http.Handler) http.Hand
 			// Check Bearer format
 			const prefix = "Bearer "
 			if !strings.HasPrefix(authHeader, prefix) {
-				respondJSON(w, http.StatusUnauthorized, map[string]string{
+				util.RespondJSON(w, http.StatusUnauthorized, map[string]string{
 					"error":   "Unauthorized",
 					"message": "Invalid authorization format. Use: Bearer <key>",
 					"code":    "INVALID_AUTH_FORMAT",
@@ -54,7 +54,7 @@ func Auth(cfg *config.Config, publicPaths []string) func(http.Handler) http.Hand
 
 			// Use constant-time comparison to prevent timing attacks
 			if subtle.ConstantTimeCompare([]byte(token), []byte(cfg.Auth.AccessKey)) != 1 {
-				respondJSON(w, http.StatusUnauthorized, map[string]string{
+				util.RespondJSON(w, http.StatusUnauthorized, map[string]string{
 					"error":   "Unauthorized",
 					"message": "Invalid access key",
 					"code":    "INVALID_ACCESS_KEY",
@@ -65,11 +65,4 @@ func Auth(cfg *config.Config, publicPaths []string) func(http.Handler) http.Hand
 			next.ServeHTTP(w, r)
 		})
 	}
-}
-
-// respondJSON is a helper function to send JSON responses
-func respondJSON(w http.ResponseWriter, status int, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
 }
