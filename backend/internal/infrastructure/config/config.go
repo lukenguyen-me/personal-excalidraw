@@ -14,6 +14,7 @@ type Config struct {
 	CORS     CORSConfig
 	Logger   LoggerConfig
 	Database DatabaseConfig
+	Auth     AuthConfig
 }
 
 // ServerConfig holds server-related configuration
@@ -49,6 +50,12 @@ type DatabaseConfig struct {
 	MinConns int
 }
 
+// AuthConfig holds authentication-related configuration
+type AuthConfig struct {
+	AccessKey string
+	Enabled   bool
+}
+
 // Load loads configuration from environment variables
 func Load() (*Config, error) {
 	// Load .env file if exists (ignore error if not found)
@@ -79,6 +86,10 @@ func Load() (*Config, error) {
 			SSLMode:  getEnv("DB_SSLMODE", "disable"),
 			MaxConns: getEnvInt("DB_MAX_CONNS", 25),
 			MinConns: getEnvInt("DB_MIN_CONNS", 5),
+		},
+		Auth: AuthConfig{
+			AccessKey: getEnv("ACCESS_KEY", ""),
+			Enabled:   getEnv("AUTH_ENABLED", "true") == "true",
 		},
 	}
 

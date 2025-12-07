@@ -47,9 +47,10 @@ func main() {
 	// 6. Initialize HTTP handlers
 	healthHandler := handler.NewHealthHandler()
 	drawingHandler := handler.NewDrawingHandler(drawingService, appLogger)
+	authHandler := handler.NewAuthHandler()
 
 	// 7. Setup router
-	router := httpAdapter.NewRouter(cfg, healthHandler, drawingHandler, appLogger)
+	router := httpAdapter.NewRouter(cfg, healthHandler, drawingHandler, authHandler, appLogger)
 
 	// 8. Create HTTP server
 	serverAddr := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)

@@ -24,6 +24,7 @@ Personal Excalidraw gives you a self-hosted alternative to cloud-based drawing t
 - Modern UI with SvelteKit and Tailwind CSS
 - Responsive design with clean table layout
 - Clean Architecture backend with comprehensive validation
+- Access key authentication for secure self-hosting
 
 ## Quick Start
 
@@ -36,6 +37,20 @@ Personal Excalidraw gives you a self-hosted alternative to cloud-based drawing t
 - Docker & Docker Compose (optional, for containerized deployment)
 
 ### Development
+
+#### Configuration
+
+Before running the application, configure your environment:
+
+```bash
+# Backend configuration
+cd backend
+cp .env.example .env
+
+# Edit .env and set your access key
+# AUTH_ENABLED=true
+# ACCESS_KEY=your-secret-key-here
+```
 
 #### Full Stack Development
 
@@ -54,6 +69,8 @@ This starts:
 - Backend API server on `http://localhost:8080`
 - Frontend dev server on `http://localhost:5173`
 
+When you first access the application, you'll be prompted to enter your access key if authentication is enabled.
+
 #### With Docker Compose
 
 ```bash
@@ -69,8 +86,41 @@ This starts:
 
 ```bash
 docker build -t personal-excalidraw:latest .
-docker run -p 8080:8080 personal-excalidraw:latest
+docker run -p 8080:8080 \
+  -e ACCESS_KEY=your-secret-key-here \
+  -e AUTH_ENABLED=true \
+  personal-excalidraw:latest
 ```
+
+## Authentication
+
+Personal Excalidraw includes access key authentication to secure your self-hosted instance.
+
+### Configuration
+
+Set these environment variables in your `.env` file or pass them to Docker:
+
+```bash
+# Enable/disable authentication
+AUTH_ENABLED=true
+
+# Your secret access key (change this!)
+ACCESS_KEY=your-secret-key-here
+```
+
+### Usage
+
+1. When authentication is enabled, you'll see an authentication modal on first visit
+2. Enter your access key to gain access to the application
+3. The key is stored in localStorage and persists across browser sessions
+4. The key is synchronized across tabs for convenience
+
+### Security Notes
+
+- Change the default access key before deploying to production
+- Use a strong, randomly generated key for better security
+- The access key is validated using constant-time comparison to prevent timing attacks
+- Authentication can be disabled by setting `AUTH_ENABLED=false` for local development
 
 ## Documentation
 
