@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte'
 	import { get } from 'svelte/store'
-	import { drawingStore, saveDrawingById } from '$lib/stores/drawing'
+	import { drawingStore } from '$lib/stores/drawing'
 	import { uiStore } from '$lib/stores/ui'
 	import { excalidrawStore } from '$lib/stores/excalidraw'
+	import { drawingsAPI } from '$lib/api'
 	import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types/types'
 	import type { DrawingState } from '$lib/stores/drawing'
 	import type { ID } from '$lib/types'
@@ -17,18 +18,25 @@
 	let saveTimeout: ReturnType<typeof setTimeout> | null = null
 	const AUTOSAVE_DELAY = 1000 // 1 second debounce
 
-	// Debounced save function
-	function debouncedSave(state: DrawingState) {
+	// Debounced save function to cloud
+	async function debouncedSave(state: DrawingState) {
 		if (saveTimeout) {
 			clearTimeout(saveTimeout)
 		}
 
-		saveTimeout = setTimeout(() => {
-			const success = saveDrawingById(drawingId, state)
-			if (success) {
-				console.log('Drawing auto-saved:', drawingId)
-			} else {
-				console.error('Failed to save drawing')
+		saveTimeout = setTimeout(async () => {
+			try {
+				// Save to cloud via API (only update data, not name)
+				await drawingsAPI.update(drawingId, {
+					data: {
+						elements: state.elements,
+						appState: state.appState,
+						files: state.files
+					}
+				})
+				console.log('Drawing auto-saved to cloud:', drawingId)
+			} catch (error) {
+				console.error('Failed to save drawing to cloud:', error)
 			}
 			saveTimeout = null
 		}, AUTOSAVE_DELAY)
@@ -100,9 +108,17 @@
 	onDestroy(() => {
 		if (saveTimeout) {
 			clearTimeout(saveTimeout)
-			// Immediately save any pending changes
+			// Immediately save any pending changes to cloud
 			const currentState = get(drawingStore)
-			saveDrawingById(drawingId, currentState)
+			drawingsAPI.update(drawingId, {
+				data: {
+					elements: currentState.elements,
+					appState: currentState.appState,
+					files: currentState.files
+				}
+			}).catch(error => {
+				console.error('Failed to save on unmount:', error)
+			})
 		}
 	})
 </script>

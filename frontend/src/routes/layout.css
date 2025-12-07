@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 @plugin 'daisyui' {
-	themes: wireframe --default;
+	themes: emerald --default;
 }
 
 @layer base {

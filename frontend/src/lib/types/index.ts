@@ -2,6 +2,6 @@
 
 /**
  * Unique identifier type for drawings
- * Uses number internally but provides type safety
+ * Uses UUID string from backend
  */
-export type ID = number
+export type ID = string

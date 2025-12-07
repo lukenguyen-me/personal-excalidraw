@@ -125,7 +125,19 @@ func (s *Service) UpdateDrawing(ctx context.Context, id string, input UpdateDraw
 	}
 
 	// Update the domain entity
-	if err := d.Update(input.Name, input.Data); err != nil {
+	// If name is not provided (empty), keep the existing name
+	nameToUpdate := input.Name
+	if nameToUpdate == "" {
+		nameToUpdate = d.Name()
+	}
+
+	// If data is not provided (nil), keep the existing data
+	dataToUpdate := input.Data
+	if dataToUpdate == nil {
+		dataToUpdate = d.Data()
+	}
+
+	if err := d.Update(nameToUpdate, dataToUpdate); err != nil {
 		s.logger.Error("failed to update drawing domain object", "error", err)
 		return nil, fmt.Errorf("failed to update drawing: %w", err)
 	}

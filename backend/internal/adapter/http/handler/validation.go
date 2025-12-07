@@ -46,8 +46,23 @@ func ValidateCreateDrawingRequest(name string, data map[string]interface{}) []Va
 
 // ValidateUpdateDrawingRequest validates the update drawing request
 func ValidateUpdateDrawingRequest(name string, data map[string]interface{}) []ValidationError {
-	// Same validation rules as create
-	return ValidateCreateDrawingRequest(name, data)
+	var errs []ValidationError
+
+	// Both name and data are optional in updates
+	// Only validate name if it's provided (non-empty)
+	if name != "" {
+		if len(name) > 255 {
+			errs = append(errs, ValidationError{
+				Field:   "name",
+				Message: "name exceeds maximum length of 255 characters",
+			})
+		}
+	}
+
+	// Data is optional in updates (only validate if provided)
+	// No validation needed for data field in updates
+
+	return errs
 }
 
 // validateCreateDrawingRequest validates the CreateDrawingRequest

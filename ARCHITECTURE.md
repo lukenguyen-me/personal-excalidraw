@@ -14,15 +14,32 @@ personal-excalidraw/
 │   │   │   └── drawing/[id]/
 │   │   │       └── +page.svelte         # Drawing editor page
 │   │   ├── lib/
+│   │   │   ├── api/
+│   │   │   │   └── drawings.ts          # API client with TypeScript types
 │   │   │   ├── components/
 │   │   │   │   └── ExcalidrawWrapper.svelte  # Excalidraw integration
-│   │   │   └── stores/
-│   │   │       ├── mockDrawings.ts      # Mock data store
-│   │   │       ├── drawing.ts           # Drawing state
-│   │   │       ├── excalidraw.ts        # Excalidraw API
-│   │   │       └── ui.ts                # UI state
+│   │   │   ├── stores/
+│   │   │   │   ├── drawing.ts           # Drawing state
+│   │   │   │   ├── excalidraw.ts        # Excalidraw API
+│   │   │   │   └── ui.ts                # UI state
+│   │   │   └── types/
+│   │   │       └── index.ts             # Shared TypeScript types
 │   │   └── routes/layout.css            # Global styles
-├── backend/                   # Go backend (stub for future)
+├── backend/                   # Go backend with Clean Architecture
+│   ├── cmd/
+│   │   └── server/
+│   │       └── main.go                  # Application entry point
+│   ├── internal/
+│   │   ├── adapter/
+│   │   │   └── http/
+│   │   │       └── handler/             # HTTP handlers (controllers)
+│   │   ├── application/
+│   │   │   └── drawing/                 # Business logic services
+│   │   ├── domain/
+│   │   │   └── drawing/                 # Domain models
+│   │   └── infrastructure/
+│   │       └── database/                # Database repositories & migrations
+│   └── go.mod
 ├── docker-compose.yml         # Development environment
 └── Dockerfile                 # Production build
 ```
@@ -30,17 +47,21 @@ personal-excalidraw/
 ## Tech Stack
 
 ### Frontend
-- **Framework**: SvelteKit 2.48.5 with Svelte 5.43.8
+- **Framework**: SvelteKit 2.48.5 with Svelte 5.45.4
 - **Build Tool**: Vite 7.2.6
-- **Styling**: Tailwind CSS 4.1.17 + DaisyUI 5.5.5 (Wireframe theme)
+- **Styling**: Tailwind CSS 4.1.17
 - **Drawing Engine**: @excalidraw/excalidraw (React wrapper)
+- **Data Fetching**: TanStack Query v5 for caching and synchronization
 - **State Management**: Svelte 5 Stores (runes-based)
-- **Language**: TypeScript 5.7.3
+- **Language**: TypeScript 5.9.3
 
-### Backend (Future)
-- **Language**: Go (net/http)
-- **Database**: PostgreSQL
-- **API**: RESTful API for drawing CRUD operations
+### Backend
+- **Language**: Go 1.24+
+- **Architecture**: Clean Architecture (Handler → Service → Repository)
+- **Database**: PostgreSQL 14+ with database/sql
+- **API**: RESTful API with comprehensive validation
+- **Testing**: Table-driven tests with testify
+- **Migrations**: Custom migration system with reversible migrations
 
 ### Deployment
 - **Containerization**: Docker + Docker Compose
@@ -82,63 +103,66 @@ Centralized `ID` type for consistent identifier handling:
 
 ## Data Storage
 
-### LocalStorage Schema (Current - Phase 2)
+### Database Schema (PostgreSQL)
 
-Drawings are stored in localStorage with the following schema:
-
-```
-Key: excalidraw-drawing-{id}
-Value: {
-  elements: [...],      // Excalidraw drawing elements (shapes, lines, text, etc.)
-  appState: {...},      // Canvas state (zoom, scroll position, view mode, etc.)
-  files: {...}          // Embedded images and files
-}
-```
-
-**Features:**
-- Per-drawing storage with unique keys
-- Automatic JSON serialization/deserialization
-- Data validation on load (validates structure and element arrays)
-- Error handling for corrupted data and quota exceeded
-- Automatic cleanup of invalid entries
-
-**Limitations:**
-- localStorage has ~5-10MB limit per domain
-- Data is browser-specific (not synced across devices)
-- Will be replaced with backend API in Phase 3
-
-### Database Schema (Future - Phase 3)
-
-PostgreSQL schema for cloud storage:
+Current production schema:
 
 ```sql
 -- Drawings table
 CREATE TABLE drawings (
-  id UUID PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  user_id UUID REFERENCES users(id),
-  data JSONB NOT NULL  -- Stores elements, appState, and files
+  slug VARCHAR(255) UNIQUE NOT NULL,
+  data JSONB NOT NULL,  -- Stores elements, appState, and files
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Users table (for future multi-user support)
-CREATE TABLE users (
-  id UUID PRIMARY KEY,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
+-- Indexes for performance
+CREATE INDEX idx_drawings_slug ON drawings(slug);
+CREATE INDEX idx_drawings_created_at ON drawings(created_at DESC);
+CREATE INDEX idx_drawings_updated_at ON drawings(updated_at DESC);
 ```
 
-## API Endpoints (Future - Phase 3)
+**Features:**
+- Auto-incrementing integer IDs
+- Slug-based URLs for SEO (e.g., `/drawing/my-architecture-diagram`)
+- JSONB storage for flexible Excalidraw data
+- Automatic timestamp management
+- Optimized indexes for common queries
 
-RESTful API design:
+**Migration System:**
+- Version-controlled migrations in `backend/internal/infrastructure/database/migrations/`
+- Reversible migrations (up/down)
+- Automatic migration execution on startup
+- Safe, tested migration scripts
+
+### Future Schema Extensions
+
+For multi-user support (Phase 4+):
+
+```sql
+-- Users table
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Add user_id to drawings
+ALTER TABLE drawings ADD COLUMN user_id INTEGER REFERENCES users(id);
+```
+
+## API Endpoints
+
+RESTful API implementation:
 
 ```
 GET    /api/drawings          # List all drawings
 GET    /api/drawings/:id      # Get specific drawing
 POST   /api/drawings          # Create new drawing
-PUT    /api/drawings/:id      # Update drawing
+PUT    /api/drawings/:id      # Update drawing (supports partial updates)
 DELETE /api/drawings/:id      # Delete drawing
 ```
 
@@ -149,27 +173,50 @@ DELETE /api/drawings/:id      # Delete drawing
 {
   "drawings": [
     {
-      "id": "uuid",
+      "id": 1,
       "name": "Architecture Diagram",
+      "slug": "architecture-diagram",
       "created_at": "2024-01-15T10:30:00Z",
       "updated_at": "2024-01-15T14:20:00Z"
     }
   ]
 }
 
-// GET /api/drawings/:id
+// GET /api/drawings/1
 {
-  "id": "uuid",
+  "id": 1,
   "name": "Architecture Diagram",
-  "created_at": "2024-01-15T10:30:00Z",
-  "updated_at": "2024-01-15T14:20:00Z",
+  "slug": "architecture-diagram",
   "data": {
     "elements": [...],
     "appState": {...},
     "files": {...}
+  },
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2024-01-15T14:20:00Z"
+}
+
+// POST /api/drawings
+{
+  "name": "New Diagram",
+  "data": {
+    "elements": [],
+    "appState": {},
+    "files": {}
   }
 }
+
+// PUT /api/drawings/1 (partial update)
+{
+  "name": "Updated Name"  // Only update name, leave data unchanged
+}
 ```
+
+**Validation:**
+- Name: 1-255 characters, required
+- Slug: Auto-generated from name, unique, URL-safe
+- Data: Valid JSON object with elements, appState, and files
+- Comprehensive error messages for validation failures
 
 ## Component Architecture
 

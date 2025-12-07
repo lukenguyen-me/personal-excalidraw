@@ -17,10 +17,13 @@ Personal Excalidraw gives you a self-hosted alternative to cloud-based drawing t
 
 - Free drawing application based on Excalidraw
 - Auto-save with 1-second debounce
-- Local-first data storage (localStorage)
-- Modern UI with SvelteKit and DaisyUI wireframe theme
+- Full CRUD operations (Create, Read, Update, Delete) for drawings
+- Inline name editing with keyboard shortcuts (Enter to save, Escape to cancel)
+- API-backed data storage with Go backend
+- TanStack Query for efficient data fetching and caching
+- Modern UI with SvelteKit and Tailwind CSS
 - Responsive design with clean table layout
-- Future: Go backend for cloud synchronization
+- Clean Architecture backend with comprehensive validation
 
 ## Quick Start
 
@@ -28,19 +31,28 @@ Personal Excalidraw gives you a self-hosted alternative to cloud-based drawing t
 
 - Node.js 18+ (for frontend development)
 - pnpm (package manager)
+- Go 1.24+ (for backend development)
+- PostgreSQL 14+ (for database)
 - Docker & Docker Compose (optional, for containerized deployment)
 
 ### Development
 
-#### Frontend Only
+#### Full Stack Development
 
 ```bash
+# Terminal 1 - Start Backend
+cd backend
+go run cmd/server/main.go
+
+# Terminal 2 - Start Frontend
 cd frontend
 pnpm install
 pnpm run dev
 ```
 
-The frontend will be available at `http://localhost:5173`
+This starts:
+- Backend API server on `http://localhost:8080`
+- Frontend dev server on `http://localhost:5173`
 
 #### With Docker Compose
 
@@ -49,8 +61,9 @@ docker-compose up
 ```
 
 This starts:
+- PostgreSQL database on port `5432`
+- Backend server on `http://localhost:8080`
 - Frontend dev server on `http://localhost:5173`
-- Backend server on `http://localhost:8080` (stub, for future use)
 
 ### Building for Production
 
