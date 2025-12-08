@@ -1,0 +1,28 @@
+# Production Dockerfile for Frontend
+FROM node:20-alpine
+
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json pnpm-lock.yaml ./
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile --prod=false
+
+# Copy source code (node_modules excluded via .dockerignore)
+COPY . .
+
+# Build the application
+RUN pnpm run build
+
+# Install serve to run the static files
+RUN pnpm add serve
+
+# Expose port
+EXPOSE 3000
+
+# Serve the built application
+CMD ["npx", "serve", "-s", "build", "-l", "3000"]

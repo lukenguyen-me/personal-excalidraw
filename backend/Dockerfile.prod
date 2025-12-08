@@ -1,0 +1,46 @@
+# Production Dockerfile for Backend
+FROM golang:1.25-alpine3.22 AS builder
+
+RUN apk add --no-cache git ca-certificates
+
+WORKDIR /app
+
+# Copy go modules files first for caching
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy backend source
+COPY . .
+
+# Build the backend binary with optimizations
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags="-w -s" \
+    -o server \
+    cmd/server/main.go
+
+# Final stage
+FROM alpine:3.22
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    ca-certificates \
+    tzdata \
+    wget \
+    && addgroup -g 1000 appgroup \
+    && adduser -D -u 1000 -G appgroup appuser
+
+WORKDIR /app
+
+# Copy backend binary
+COPY --from=builder --chown=appuser:appgroup /app/server ./
+
+# Switch to non-root user
+USER appuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+
+EXPOSE 8080
+
+CMD ["./server"]

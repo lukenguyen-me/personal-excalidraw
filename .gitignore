@@ -28,6 +28,7 @@ npm-debug.log*
 
 # Local development
 .env.local
+.env.production
 *.local
 
 # Claude Code

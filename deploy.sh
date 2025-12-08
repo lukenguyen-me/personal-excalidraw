@@ -103,10 +103,10 @@ config() {
     echo ""
 
     # Application Port
-    print_info "Application Port (default: 8080)"
-    echo "The port where your application will be accessible."
+    print_info "Application Port (default: 3000)"
+    echo "The port where your application will be accessible via nginx."
     read -p "> " app_port
-    app_port=${app_port:-8080}
+    app_port=${app_port:-3000}
     echo ""
 
     # CORS Origins
@@ -192,14 +192,19 @@ start() {
     print_info "Starting Personal Excalidraw..."
     check_env_file
 
-    docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d
+    # Export all variables from the env file so docker compose can use them
+    set -a
+    source "$ENV_FILE"
+    set +a
+
+    docker compose -f "$COMPOSE_FILE" up -d
 
     print_success "Application started successfully!"
     print_info "Waiting for services to be healthy..."
     sleep 5
 
     docker compose -f "$COMPOSE_FILE" ps
-    print_info "Application available at: http://localhost:\$(grep APP_PORT $ENV_FILE | cut -d'=' -f2 | tr -d '[:space:]' || echo '8080')"
+    print_info "Application available at: http://localhost:${APP_PORT:-3000}"
 }
 
 stop() {
@@ -214,7 +219,12 @@ restart() {
     print_info "Restarting Personal Excalidraw..."
     check_env_file
 
-    docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" restart
+    # Export all variables from the env file so docker compose can use them
+    set -a
+    source "$ENV_FILE"
+    set +a
+
+    docker compose -f "$COMPOSE_FILE" restart
 
     print_success "Application restarted successfully!"
 
@@ -258,6 +268,11 @@ upgrade() {
     print_info "Upgrading Personal Excalidraw..."
     check_env_file
 
+    # Export all variables from the env file so docker compose can use them
+    set -a
+    source "$ENV_FILE"
+    set +a
+
     # Pull latest changes
     print_info "Pulling latest changes from git..."
     git pull origin master || git pull origin main || {
@@ -278,7 +293,7 @@ upgrade() {
 
     # Rebuild and restart
     print_info "Rebuilding and restarting services..."
-    docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --build
+    docker compose -f "$COMPOSE_FILE" up -d --build
 
     # Wait for services to be healthy
     print_info "Waiting for services to be healthy..."
@@ -289,7 +304,7 @@ upgrade() {
 
     # Show recent logs
     print_info "Recent application logs:"
-    docker compose -f "$COMPOSE_FILE" logs --tail=20 app
+    docker compose -f "$COMPOSE_FILE" logs --tail=20 backend
 
     print_success "Upgrade completed successfully!"
 
@@ -350,7 +365,7 @@ restore() {
 
     # Restart application
     print_info "Restarting application..."
-    docker compose -f "$COMPOSE_FILE" restart app
+    docker compose -f "$COMPOSE_FILE" restart backend
 
     print_success "Application restarted!"
 }
@@ -392,7 +407,7 @@ ${YELLOW}Commands:${NC}
   ${BLUE}restart${NC}            Restart the application
   ${BLUE}status${NC}             Show service status and health
   ${BLUE}logs${NC} [service]     Show logs (last 100 lines)
-                       - Add service name: app, postgres
+                       - Add service name: frontend, backend, nginx, postgres
                        - Add -f to follow logs
   ${BLUE}upgrade${NC}            Pull latest changes, backup database, rebuild and restart
   ${BLUE}backup${NC}             Create database backup
@@ -402,7 +417,7 @@ ${YELLOW}Commands:${NC}
 ${YELLOW}Examples:${NC}
   $0 config                 # Interactive setup (first time)
   $0 start                  # Start all services
-  $0 logs app -f            # Follow application logs
+  $0 logs backend -f        # Follow backend logs
   $0 logs postgres          # Show last 100 lines of postgres logs
   $0 upgrade                # Upgrade to latest version
   $0 backup                 # Create database backup
