@@ -17,8 +17,8 @@ If Docker is not installed on your server:
 sudo apt update
 
 # Install Docker
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
+curl -fsSL https://get.docker.com -o install-docker.sh
+sudo sh install-docker.sh
 
 # Allow your user to run Docker
 sudo usermod -aG docker $USER
@@ -32,11 +32,13 @@ Verify Docker is installed:
 docker --version
 ```
 
+The script automatically detects and works with both `docker compose` (newer) and `docker-compose` (older) commands.
+
 ## Step 2: Get the Application
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/personal-excalidraw.git
+git clone https://github.com/lukenugyen-me/personal-excalidraw.git
 cd personal-excalidraw
 ```
 
@@ -130,6 +132,7 @@ Press Ctrl+C to stop watching.
 ```
 
 This will:
+
 1. Pull the latest code
 2. Backup your database automatically
 3. Rebuild and restart
@@ -180,7 +183,7 @@ server {
     server_name yourdomain.com;
 
     location / {
-        proxy_pass http://localhost:8080;
+        proxy_pass http://localhost:3000;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -217,11 +220,13 @@ nano .env.production
 ```
 
 Change:
+
 ```bash
 CORS_ALLOWED_ORIGINS=https://yourdomain.com
 ```
 
 Restart:
+
 ```bash
 ./deploy.sh restart
 ```
@@ -231,17 +236,20 @@ Restart:
 ### "Port already in use"
 
 Another service is using port 8080. Either:
+
 - Stop the other service, or
 - Change `APP_PORT` in `.env.production` to a different port (like 8081)
 
 ### "Cannot connect to database"
 
 Check the logs:
+
 ```bash
 ./deploy.sh logs postgres
 ```
 
 Make sure the postgres container is running:
+
 ```bash
 ./deploy.sh status
 ```
@@ -253,11 +261,13 @@ Make sure the `ACCESS_KEY` in your `.env.production` matches what you're typing 
 ### Application won't start
 
 View the logs to see the error:
+
 ```bash
 ./deploy.sh logs
 ```
 
 Common fixes:
+
 1. Make sure Docker is running: `docker ps`
 2. Check you have enough disk space: `df -h`
 3. Verify your `.env.production` file exists and has the required values
@@ -306,6 +316,7 @@ That's it! The key commands you'll use are:
 - `./deploy.sh backup` - Backup your data
 
 Everything else is automated:
+
 - ✅ Configuration wizard guides you through setup
 - ✅ Database created automatically
 - ✅ Migrations run automatically
