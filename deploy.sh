@@ -10,14 +10,13 @@ COMPOSE_FILE="docker-compose.prod.yml"
 ENV_FILE=".env.production"
 PROJECT_NAME="personal-excalidraw"
 
-# Detect $DOCKER_COMPOSE command (supports both old and new syntax)
-if $DOCKER_COMPOSE version >/dev/null 2>&1; then
-    DOCKER_COMPOSE="$DOCKER_COMPOSE"
-elif docker-compose version >/dev/null 2>&1; then
-    DOCKER_COMPOSE="docker-compose"
+# Detect docker compose command (requires Docker Compose V2)
+if docker compose version >/dev/null 2>&1; then
+    DOCKER_COMPOSE="docker compose"
 else
-    echo "Error: Neither '$DOCKER_COMPOSE' nor 'docker-compose' is available"
-    echo "Please install Docker Compose: https://docs.docker.com/compose/install/"
+    echo "Error: 'docker compose' is not available"
+    echo "Please install Docker with Compose V2 support (Docker 20.10.13 or higher)"
+    echo "Installation guide: https://docs.docker.com/compose/install/"
     exit 1
 fi
 

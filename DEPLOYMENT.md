@@ -16,23 +16,28 @@ If Docker is not installed on your server:
 # Update system
 sudo apt update
 
-# Install Docker
+# Install Docker (this installs the latest version with Compose V2 support)
 curl -fsSL https://get.docker.com -o install-docker.sh
 sudo sh install-docker.sh
 
 # Allow your user to run Docker
 sudo usermod -aG docker $USER
 
+# Start Docker service
+sudo systemctl start docker
+sudo systemctl enable docker
+
 # Log out and back in for changes to take effect
 ```
 
-Verify Docker is installed:
+Verify Docker is installed with Compose V2 support:
 
 ```bash
 docker --version
+docker compose version
 ```
 
-The script automatically detects and works with both `docker compose` (newer) and `docker-compose` (older) commands.
+**Important:** This application requires Docker with Compose V2 support (Docker 20.10.13 or higher). The deployment script uses the `docker compose` command (not the older `docker-compose` standalone tool).
 
 ## Step 2: Get the Application
 
