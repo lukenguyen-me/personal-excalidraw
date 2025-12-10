@@ -10,6 +10,16 @@ COMPOSE_FILE="docker-compose.prod.yml"
 ENV_FILE=".env.production"
 PROJECT_NAME="personal-excalidraw"
 
+# Detect docker compose command (requires Docker Compose V2)
+if docker compose version >/dev/null 2>&1; then
+    DOCKER_COMPOSE="docker compose"
+else
+    echo "Error: 'docker compose' is not available"
+    echo "Please install Docker with Compose V2 support (Docker 20.10.13 or higher)"
+    echo "Installation guide: https://docs.docker.com/compose/install/"
+    exit 1
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -192,25 +202,25 @@ start() {
     print_info "Starting Personal Excalidraw..."
     check_env_file
 
-    # Export all variables from the env file so docker compose can use them
+    # Export all variables from the env file so $DOCKER_COMPOSE can use them
     set -a
     source "$ENV_FILE"
     set +a
 
-    docker compose -f "$COMPOSE_FILE" up -d
+    $DOCKER_COMPOSE -f "$COMPOSE_FILE" up -d
 
     print_success "Application started successfully!"
     print_info "Waiting for services to be healthy..."
     sleep 5
 
-    docker compose -f "$COMPOSE_FILE" ps
+    $DOCKER_COMPOSE -f "$COMPOSE_FILE" ps
     print_info "Application available at: http://localhost:${APP_PORT:-3000}"
 }
 
 stop() {
     print_info "Stopping Personal Excalidraw..."
 
-    docker compose -f "$COMPOSE_FILE" down
+    $DOCKER_COMPOSE -f "$COMPOSE_FILE" down
 
     print_success "Application stopped successfully!"
 }
@@ -219,26 +229,26 @@ restart() {
     print_info "Restarting Personal Excalidraw..."
     check_env_file
 
-    # Export all variables from the env file so docker compose can use them
+    # Export all variables from the env file so $DOCKER_COMPOSE can use them
     set -a
     source "$ENV_FILE"
     set +a
 
-    docker compose -f "$COMPOSE_FILE" restart
+    $DOCKER_COMPOSE -f "$COMPOSE_FILE" restart
 
     print_success "Application restarted successfully!"
 
-    docker compose -f "$COMPOSE_FILE" ps
+    $DOCKER_COMPOSE -f "$COMPOSE_FILE" ps
 }
 
 status() {
     print_info "Checking service status..."
 
-    docker compose -f "$COMPOSE_FILE" ps
+    $DOCKER_COMPOSE -f "$COMPOSE_FILE" ps
 
     echo ""
     print_info "Service health:"
-    docker compose -f "$COMPOSE_FILE" ps --format "table {{.Name}}\t{{.Status}}\t{{.Health}}"
+    $DOCKER_COMPOSE -f "$COMPOSE_FILE" ps --format "table {{.Name}}\t{{.Status}}\t{{.Health}}"
 }
 
 logs() {
@@ -248,18 +258,18 @@ logs() {
     if [ "$follow" = "-f" ] || [ "$follow" = "--follow" ]; then
         if [ -n "$service" ]; then
             print_info "Following logs for service: $service"
-            docker compose -f "$COMPOSE_FILE" logs -f "$service"
+            $DOCKER_COMPOSE -f "$COMPOSE_FILE" logs -f "$service"
         else
             print_info "Following logs for all services..."
-            docker compose -f "$COMPOSE_FILE" logs -f
+            $DOCKER_COMPOSE -f "$COMPOSE_FILE" logs -f
         fi
     else
         if [ -n "$service" ]; then
             print_info "Showing last 100 lines for service: $service"
-            docker compose -f "$COMPOSE_FILE" logs --tail=100 "$service"
+            $DOCKER_COMPOSE -f "$COMPOSE_FILE" logs --tail=100 "$service"
         else
             print_info "Showing last 100 lines for all services..."
-            docker compose -f "$COMPOSE_FILE" logs --tail=100
+            $DOCKER_COMPOSE -f "$COMPOSE_FILE" logs --tail=100
         fi
     fi
 }
@@ -268,7 +278,7 @@ upgrade() {
     print_info "Upgrading Personal Excalidraw..."
     check_env_file
 
-    # Export all variables from the env file so docker compose can use them
+    # Export all variables from the env file so $DOCKER_COMPOSE can use them
     set -a
     source "$ENV_FILE"
     set +a
@@ -283,7 +293,7 @@ upgrade() {
     # Backup database
     print_info "Creating database backup..."
     BACKUP_FILE="backup_$(date +%Y%m%d_%H%M%S).sql"
-    docker compose -f "$COMPOSE_FILE" exec -T postgres pg_dump -U postgres personal_excalidraw > "$BACKUP_FILE" 2>/dev/null || {
+    $DOCKER_COMPOSE -f "$COMPOSE_FILE" exec -T postgres pg_dump -U postgres personal_excalidraw > "$BACKUP_FILE" 2>/dev/null || {
         print_warning "Database backup failed (database might not be running)"
     }
 
@@ -293,18 +303,18 @@ upgrade() {
 
     # Rebuild and restart
     print_info "Rebuilding and restarting services..."
-    docker compose -f "$COMPOSE_FILE" up -d --build
+    $DOCKER_COMPOSE -f "$COMPOSE_FILE" up -d --build
 
     # Wait for services to be healthy
     print_info "Waiting for services to be healthy..."
     sleep 10
 
     # Check status
-    docker compose -f "$COMPOSE_FILE" ps
+    $DOCKER_COMPOSE -f "$COMPOSE_FILE" ps
 
     # Show recent logs
     print_info "Recent application logs:"
-    docker compose -f "$COMPOSE_FILE" logs --tail=20 backend
+    $DOCKER_COMPOSE -f "$COMPOSE_FILE" logs --tail=20 backend
 
     print_success "Upgrade completed successfully!"
 
@@ -322,7 +332,7 @@ backup() {
     mkdir -p "$BACKUP_DIR"
 
     BACKUP_FILE="$BACKUP_DIR/backup_$(date +%Y%m%d_%H%M%S).sql"
-    docker compose -f "$COMPOSE_FILE" exec -T postgres pg_dump -U postgres personal_excalidraw > "$BACKUP_FILE"
+    $DOCKER_COMPOSE -f "$COMPOSE_FILE" exec -T postgres pg_dump -U postgres personal_excalidraw > "$BACKUP_FILE"
 
     print_success "Database backed up to: $BACKUP_FILE"
 
@@ -359,13 +369,13 @@ restore() {
     fi
 
     print_info "Restoring database from backup..."
-    docker compose -f "$COMPOSE_FILE" exec -T postgres psql -U postgres personal_excalidraw < "$backup_file"
+    $DOCKER_COMPOSE -f "$COMPOSE_FILE" exec -T postgres psql -U postgres personal_excalidraw < "$backup_file"
 
     print_success "Database restored successfully!"
 
     # Restart application
     print_info "Restarting application..."
-    docker compose -f "$COMPOSE_FILE" restart backend
+    $DOCKER_COMPOSE -f "$COMPOSE_FILE" restart backend
 
     print_success "Application restarted!"
 }
@@ -381,7 +391,7 @@ clean() {
     fi
 
     print_info "Stopping and removing containers..."
-    docker compose -f "$COMPOSE_FILE" down
+    $DOCKER_COMPOSE -f "$COMPOSE_FILE" down
 
     print_info "Removing images..."
     docker images | grep personal-excalidraw | awk '{print $3}' | xargs -r docker rmi -f
